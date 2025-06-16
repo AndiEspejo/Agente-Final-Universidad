@@ -81,16 +81,24 @@ async def catch_exceptions_middleware(request: Request, call_next):
 async def root():
     """Root endpoint with API information."""
     return {
-        "message": "LangGraph Sales/Inventory API - Database Version",
-        "version": "3.0.0",
+        "message": "SmartStock AI - Multi-Agent Sales & Inventory System",
+        "version": "4.0.0",
         "status": "healthy",
+        "architecture": "Multi-Agent with ChatOrchestrator",
+        "agents": {
+            "IntentClassifier": "Intelligent intent detection with confidence scoring",
+            "ProductAgent": "Product management with natural language processing",
+            "SalesAgent": "Sales analysis, order creation, and reporting",
+            "InventoryAgent": "Inventory analysis with AI recommendations",
+            "EmailAgent": "Automated report generation and email sending",
+        },
         "endpoints": {
             "auth": {
                 "register": "/auth/register",
                 "login": "/auth/login",
                 "me": "/auth/me",
             },
-            "chat": "/chat",
+            "chat": "/chat (now powered by multi-agent orchestrator)",
             "inventory": {
                 "add_product": "/inventory/add-product",
                 "list": "/inventory/list",
@@ -109,14 +117,24 @@ async def root():
             },
         },
         "features": [
-            "Autenticación JWT",
-            "Chat de lenguaje natural",
-            "Gestión de inventario con base de datos",
-            "Órdenes de venta con sincronización",
-            "Análisis de IA con gráficas",
-            "Arquitectura con SQLAlchemy",
-            "Operaciones asíncronas",
+            "🤖 Multi-Agent Architecture with ChatOrchestrator",
+            "🔐 Autenticación JWT",
+            "💬 Chat de lenguaje natural con agentes especializados",
+            "📦 Gestión de inventario con base de datos",
+            "💰 Órdenes de venta con sincronización automática",
+            "📊 Análisis de IA con gráficas en tiempo real",
+            "📧 Reportes por email con gráficas embebidas",
+            "🏗️ Arquitectura con SQLAlchemy",
+            "⚡ Operaciones asíncronas de alto rendimiento",
+            "🔄 Compatibilidad con arquitectura legacy",
         ],
+        "chat_examples": {
+            "products": "Añadir producto Laptop con precio $800 y cantidad 10",
+            "sales": "Vender 2 Laptops a cliente María",
+            "analysis": "Análisis de inventario / Análisis de ventas",
+            "email": "Enviar reporte de inventario a admin@empresa.com",
+            "inventory": "¿Qué elementos hay en el inventario?",
+        },
     }
 
 
