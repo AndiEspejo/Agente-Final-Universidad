@@ -6,8 +6,9 @@ import { AuthProvider } from '@/contexts/AuthContext';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'LangGraph Sales & Inventory Assistant',
-  description: 'AI-powered business intelligence and analysis platform',
+  title: 'SmartStock AI - Transformando la Gestión de Inventario',
+  description:
+    'Plataforma de inteligencia artificial para análisis empresarial y gestión de inventario',
 };
 
 export default function RootLayout({

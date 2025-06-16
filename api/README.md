@@ -1,6 +1,6 @@
-# Sales/Inventory System with LangGraph
+# SmartStock AI - Transformando la Gestión de Inventario
 
-A modern Python-based sales and inventory management system powered by LangGraph workflows, Pydantic data validation, Google Gemini AI, and JWT authentication.
+Una plataforma moderna de gestión de inventario y ventas impulsada por inteligencia artificial, con workflows de LangGraph, validación de datos con Pydantic, Google Gemini AI, y autenticación JWT.
 
 ## Features
 

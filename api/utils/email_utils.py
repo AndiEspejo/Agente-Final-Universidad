@@ -320,7 +320,7 @@ class EmailService:
         {recommendations_html}
 
         <div class="footer">
-            <p><strong>Sistema de Ventas e Inventario</strong></p>
+            <p><strong>SmartStock AI - Transformando la Gestión de Inventario</strong></p>
             <p>Reporte generado automáticamente el {analysis_data.get('analysis_date', 'N/A')}</p>
             <p>Este análisis incluye inteligencia artificial para proporcionar insights avanzados.</p>
         </div>

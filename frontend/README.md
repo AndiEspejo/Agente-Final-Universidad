@@ -1,4 +1,6 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SmartStock AI - Frontend
+
+Frontend de la aplicación SmartStock AI, construido con [Next.js](https://nextjs.org) y TypeScript para transformar la gestión de inventario con inteligencia artificial.
 
 ## Getting Started
 

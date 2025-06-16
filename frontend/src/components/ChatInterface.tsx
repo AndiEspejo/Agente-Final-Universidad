@@ -21,7 +21,9 @@ export default function ChatInterface({ className }: ChatInterfaceProps) {
     {
       id: generateId(),
       role: 'assistant',
-      content: `¡Bienvenido al Asistente de Ventas e Inventario con LangGraph! 🚀
+      content: `¡Bienvenido a SmartStock AI! 🚀
+
+**Transformando la Gestión de Inventario** con inteligencia artificial avanzada.
 
 Te puedo ayudar con:
 • 📦 **Análisis de Inventario** - Niveles de stock, predicción de demanda, recomendaciones de reabastecimiento
@@ -180,10 +182,10 @@ Prueba preguntándome cosas como:
           <div>
             <h1 className='text-xl font-semibold text-gray-900 flex items-center gap-2'>
               <BarChart3 className='h-6 w-6 text-blue-600' />
-              Asistente de Ventas e Inventario LangGraph
+              SmartStock AI
             </h1>
             <p className='text-sm text-gray-600 mt-1'>
-              Inteligencia empresarial y análisis impulsado por IA
+              Transformando la Gestión de Inventario
             </p>
           </div>
 

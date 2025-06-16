@@ -100,7 +100,7 @@ export default function RegisterForm({
       <div className='bg-white rounded-xl shadow-lg p-8'>
         <div className='text-center mb-8'>
           <h2 className='text-3xl font-bold text-gray-900'>Crear Cuenta</h2>
-          <p className='text-gray-600 mt-2'>Únete a LangGraph</p>
+          <p className='text-gray-600 mt-2'>Únete a SmartStock AI</p>
         </div>
 
         <form onSubmit={handleSubmit} className='space-y-6'>
@@ -117,7 +117,7 @@ export default function RegisterForm({
               name='fullName'
               value={formData.fullName}
               onChange={handleInputChange}
-              className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all'
+              className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-gray-900 placeholder-gray-400'
               placeholder='Tu nombre completo'
               disabled={isSubmitting || isLoading}
             />
@@ -136,7 +136,7 @@ export default function RegisterForm({
               name='email'
               value={formData.email}
               onChange={handleInputChange}
-              className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all'
+              className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-gray-900 placeholder-gray-400'
               placeholder='tu@email.com'
               disabled={isSubmitting || isLoading}
             />
@@ -155,7 +155,7 @@ export default function RegisterForm({
               name='username'
               value={formData.username}
               onChange={handleInputChange}
-              className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all'
+              className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-gray-900 placeholder-gray-400'
               placeholder='usuario123'
               disabled={isSubmitting || isLoading}
             />
@@ -174,7 +174,7 @@ export default function RegisterForm({
               name='password'
               value={formData.password}
               onChange={handleInputChange}
-              className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all'
+              className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-gray-900 placeholder-gray-400'
               placeholder='Mínimo 6 caracteres'
               disabled={isSubmitting || isLoading}
             />
@@ -193,7 +193,7 @@ export default function RegisterForm({
               name='confirmPassword'
               value={formData.confirmPassword}
               onChange={handleInputChange}
-              className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all'
+              className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-gray-900 placeholder-gray-400'
               placeholder='Repite tu contraseña'
               disabled={isSubmitting || isLoading}
             />

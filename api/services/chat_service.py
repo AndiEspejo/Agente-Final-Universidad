@@ -5,7 +5,7 @@ Chat Service for processing natural language commands - Database Version.
 import logging
 import re
 from datetime import datetime, timedelta
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -100,20 +100,50 @@ class ChatService:
             ) and ("@" in message or "correo" in message_lower):
                 return await self._handle_email_request(message)
 
-            # Handle add product commands
+            # Handle add product commands (check for specific add patterns)
             elif any(
                 keyword in message_lower
                 for keyword in [
                     "añadir",
+                    "añade",
                     "agregar",
+                    "agrega",
                     "crear producto",
                     "nuevo producto",
                     "add product",
                     "add item",
                     "añadir inventario",
                 ]
+            ) or (
+                # Also detect patterns like "Añade el producto X con..."
+                re.search(
+                    r"(?:añade|añadir|agregar|agrega|crear)\s+(?:el\s+)?producto",
+                    message_lower,
+                )
             ):
                 return await self._handle_add_product(message)
+
+            # Handle create sale/order commands (HIGHER PRIORITY - check first)
+            elif any(
+                keyword in message_lower
+                for keyword in [
+                    "vender",
+                    "crear venta",
+                    "nueva venta",
+                    "nueva orden",
+                    "crear orden",
+                    "sell",
+                    "create sale",
+                    "new sale",
+                    "new order",
+                    "create order",
+                ]
+            ) or (
+                # Also detect patterns like "2 Laptops, 1 TV a cliente"
+                re.search(r"\d+\s+\w+.*a\s+cliente", message_lower)
+                or re.search(r"vender\s+\d+", message_lower)
+            ):
+                return await self._handle_create_sale(message)
 
             # Handle simple inventory listing (more specific patterns first)
             elif any(
@@ -153,39 +183,50 @@ class ChatService:
                 for keyword in [
                     "ventas",
                     "ingresos",
-                    "cliente",
                     "rendimiento",
                     "análisis de ventas",
-                    "analizar",
-                    "analiza",
-                    "muéstrame",
+                    "analizar ventas",
+                    "analiza ventas",
+                    "muéstrame ventas",
                     "sales",
                     "revenue",
-                    "customer",
                     "performance",
-                    "analyze",
-                    "show",
+                    "sales analysis",
+                    "show sales",
                 ]
             ):
                 return await self._handle_sales_analysis()
 
-            # Handle edit inventory
-            elif any(
+            # Handle edit inventory (exclude add commands)
+            elif (
+                any(
+                    keyword in message_lower
+                    for keyword in [
+                        "editar",
+                        "modificar",
+                        "actualizar",
+                        "cambiar",
+                        "edit",
+                        "modify",
+                        "update",
+                        "change",
+                    ]
+                )
+                and any(
+                    keyword in message_lower
+                    for keyword in ["producto", "inventario", "product", "inventory"]
+                )
+            ) and not any(
+                # Exclude add commands
                 keyword in message_lower
                 for keyword in [
-                    "editar",
-                    "modificar",
-                    "actualizar",
-                    "cambiar",
-                    "edit",
-                    "modify",
-                    "update",
-                    "change",
-                    "producto",
+                    "añadir",
+                    "añade",
+                    "agregar",
+                    "agrega",
+                    "crear",
+                    "nuevo",
                 ]
-            ) and any(
-                keyword in message_lower
-                for keyword in ["producto", "inventario", "product", "inventory"]
             ):
                 return await self._handle_edit_inventory(message)
 
@@ -782,14 +823,69 @@ class ChatService:
             if not edit_data:
                 return ChatResponse(
                     response="❌ No pude extraer la información de edición. "
-                    "Usa el formato: Editar producto ID X, cambiar precio a $Y, cantidad a Z",
+                    "Puedes usar comandos como:\n"
+                    "• 'Actualizar Vajilla de porcelana a 15 productos'\n"
+                    "• 'Actualizar Vajilla de porcelana precio a 1500'\n"
+                    "• 'Editar producto ID 1, cambiar precio a $600'",
+                    workflow_id="edit-inventory-error-"
+                    + datetime.now().strftime("%Y%m%d-%H%M%S"),
+                )
+
+            # Find the product (by ID or by name search)
+            existing_product = None
+            product_id = edit_data.get("product_id")
+
+            if product_id:
+                # Search by ID (traditional method)
+                existing_product = await self.db_service.get_product_by_id(product_id)
+                if not existing_product:
+                    return ChatResponse(
+                        response=f"❌ **Producto no encontrado**: No existe un producto con ID {product_id}",
+                        workflow_id="edit-inventory-not-found-"
+                        + datetime.now().strftime("%Y%m%d-%H%M%S"),
+                    )
+            elif edit_data.get("search_name"):
+                # Search by name (new flexible method)
+                search_name = edit_data.get("search_name").lower()
+                all_products = await self.db_service.get_all_products()
+
+                # Find exact or partial matches
+                matches = []
+                for product in all_products:
+                    if search_name in product.name.lower():
+                        matches.append(product)
+
+                if not matches:
+                    return ChatResponse(
+                        response=f"❌ **Producto no encontrado**: No encontré ningún producto que contenga '{edit_data.get('search_name')}'.\n"
+                        "Verifica el nombre o usa 'Ver inventario' para ver todos los productos disponibles.",
+                        workflow_id="edit-inventory-not-found-"
+                        + datetime.now().strftime("%Y%m%d-%H%M%S"),
+                    )
+                elif len(matches) > 1:
+                    # Multiple matches - show options
+                    options = "\n".join([f"• ID {p.id}: {p.name}" for p in matches[:5]])
+                    return ChatResponse(
+                        response=f"❓ **Múltiples productos encontrados** para '{edit_data.get('search_name')}':\n\n{options}\n\n"
+                        "Por favor especifica el ID del producto que quieres editar.",
+                        workflow_id="edit-inventory-multiple-"
+                        + datetime.now().strftime("%Y%m%d-%H%M%S"),
+                    )
+                else:
+                    # Single match found
+                    existing_product = matches[0]
+                    product_id = existing_product.id
+
+            if not existing_product:
+                return ChatResponse(
+                    response="❌ **Error**: No se pudo identificar el producto a editar.",
                     workflow_id="edit-inventory-error-"
                     + datetime.now().strftime("%Y%m%d-%H%M%S"),
                 )
 
             # Create ProductEditRequest
             product_edit = ProductEditRequest(
-                product_id=edit_data.get("product_id"),
+                product_id=product_id,
                 name=edit_data.get("name"),
                 price=edit_data.get("price"),
                 category=edit_data.get("category"),
@@ -798,17 +894,6 @@ class ChatService:
                 minimum_stock=edit_data.get("minimum_stock"),
                 maximum_stock=edit_data.get("maximum_stock"),
             )
-
-            # Check if product exists
-            existing_product = await self.db_service.get_product_by_id(
-                product_edit.product_id
-            )
-            if not existing_product:
-                return ChatResponse(
-                    response=f"❌ **Producto no encontrado**: No existe un producto con ID {product_edit.product_id}",
-                    workflow_id="edit-inventory-not-found-"
-                    + datetime.now().strftime("%Y%m%d-%H%M%S"),
-                )
 
             # Update the product
             updated_product = await self.db_service.update_product(
@@ -873,56 +958,306 @@ class ChatService:
                 + datetime.now().strftime("%Y%m%d-%H%M%S"),
             )
 
-    def _parse_product_data(self, message: str) -> Dict[str, Any]:
-        """Parse product data from natural language message."""
-        product_data = {}
+    async def _handle_create_sale(self, message: str) -> ChatResponse:
+        """Handle create sale command with multiple products support."""
+        try:
+            logger.info(f"🛒 CREATE_SALE: Starting with message: {message}")
 
-        # Extract name (between quotes or after "producto:")
-        name_match = re.search(
-            r'(?:producto[:\s]+|nombre[:\s]+)["\']([^"\']+)["\']|(?:producto[:\s]+|nombre[:\s]+)([^,\n]+)',
-            message,
-            re.IGNORECASE,
-        )
-        if name_match:
-            product_data["name"] = (name_match.group(1) or name_match.group(2)).strip()
+            # Parse sale data from natural language
+            sale_data = self._parse_sale_data(message)
 
-        # Extract price
-        price_match = re.search(
-            r"precio[:\s]*\$?(\d+(?:\.\d{2})?)", message, re.IGNORECASE
-        )
-        if price_match:
-            product_data["price"] = float(price_match.group(1))
+            if not sale_data:
+                return ChatResponse(
+                    response="❌ No pude extraer la información de la venta. "
+                    "Puedes usar comandos como:\n"
+                    "• 'Vender 3 unidades de TV, 4 de vajilla a cliente Andres'\n"
+                    "• 'Crear venta: Cliente ID 1, Producto Laptop cantidad 2'\n"
+                    "• 'Nueva orden: Cliente Juan, Televisor x1, Laptop x2'",
+                    workflow_id="create-sale-error-"
+                    + datetime.now().strftime("%Y%m%d-%H%M%S"),
+                )
 
-        # Extract quantity
-        quantity_match = re.search(r"cantidad[:\s]*(\d+)", message, re.IGNORECASE)
-        if quantity_match:
-            product_data["quantity"] = int(quantity_match.group(1))
+            # Find or create customer
+            customer_id = await self._resolve_customer(sale_data.get("customer"))
+            if not customer_id:
+                return ChatResponse(
+                    response="❌ **Error con el cliente**: No pude identificar o crear el cliente especificado.",
+                    workflow_id="create-sale-customer-error-"
+                    + datetime.now().strftime("%Y%m%d-%H%M%S"),
+                )
 
-        # Extract category (map Spanish to English)
-        category_match = re.search(r"categoría[:\s]*([^,\n]+)", message, re.IGNORECASE)
-        if category_match:
-            category_spanish = category_match.group(1).strip().lower()
-            product_data["category"] = self.category_mapping.get(
-                category_spanish, category_spanish.title()
+            # Resolve products and validate stock
+            resolved_items = []
+            stock_errors = []
+
+            for item in sale_data.get("items", []):
+                product_name = item.get("product_name")
+                quantity = item.get("quantity")
+
+                # Find product by name
+                all_products = await self.db_service.get_all_products()
+                matching_products = []
+
+                for product in all_products:
+                    if (
+                        product_name.lower() in product.name.lower()
+                        or product.name.lower() in product_name.lower()
+                    ):
+                        matching_products.append(product)
+
+                if not matching_products:
+                    stock_errors.append(f"❌ Producto '{product_name}' no encontrado")
+                    continue
+                elif len(matching_products) > 1:
+                    # Multiple matches - use the best match
+                    best_match = min(matching_products, key=lambda p: len(p.name))
+                    product = best_match
+                else:
+                    product = matching_products[0]
+
+                # Check stock availability
+                if not product.inventory_items:
+                    stock_errors.append(
+                        f"❌ '{product.name}': Sin inventario disponible"
+                    )
+                    continue
+
+                current_stock = product.inventory_items[0].quantity
+                if current_stock < quantity:
+                    stock_errors.append(
+                        f"❌ '{product.name}': Stock insuficiente. "
+                        f"Disponible: {current_stock}, Solicitado: {quantity}"
+                    )
+                    continue
+
+                # Add to resolved items
+                resolved_items.append(
+                    {
+                        "product_id": product.id,
+                        "quantity": quantity,
+                        "price": float(product.price),
+                    }
+                )
+
+            # If there are stock errors, return them
+            if stock_errors:
+                error_message = "❌ **Errores en la venta:**\n\n" + "\n".join(
+                    stock_errors
+                )
+                if resolved_items:
+                    error_message += "\n\n💡 **Productos disponibles:**\n"
+                    for item in resolved_items:
+                        product = await self.db_service.get_product_by_id(
+                            item["product_id"]
+                        )
+                        error_message += f"• {product.name}: {item['quantity']} unidades disponibles\n"
+
+                return ChatResponse(
+                    response=error_message,
+                    workflow_id="create-sale-stock-error-"
+                    + datetime.now().strftime("%Y%m%d-%H%M%S"),
+                )
+
+            if not resolved_items:
+                return ChatResponse(
+                    response="❌ **Error**: No se pudieron procesar los productos solicitados.",
+                    workflow_id="create-sale-no-items-"
+                    + datetime.now().strftime("%Y%m%d-%H%M%S"),
+                )
+
+            # Create the order
+            order = await self.db_service.create_order(
+                customer_id=customer_id,
+                items=resolved_items,
+                payment_method=sale_data.get("payment_method", "credit_card"),
             )
 
+            # Build success response
+            customer = await self.db_service.get_customer_by_id(customer_id)
+
+            # Get updated product info for response
+            items_text = ""
+            total_items = 0
+            for item in resolved_items:
+                product = await self.db_service.get_product_by_id(item["product_id"])
+                updated_stock = (
+                    product.inventory_items[0].quantity
+                    if product.inventory_items
+                    else 0
+                )
+                items_text += f"• **{product.name}**: {item['quantity']} unidades × ${item['price']:.2f} = ${item['quantity'] * item['price']:.2f}\n"
+                items_text += f"  _(Stock restante: {updated_stock} unidades)_\n"
+                total_items += item["quantity"]
+
+            response_text = f"""✅ **¡Venta Creada Exitosamente!** 🎉
+
+**📋 Detalles de la Orden:**
+- **ID de Orden:** #{order.id}
+- **Cliente:** {customer.name}
+- **Total de productos:** {total_items} unidades
+- **Monto total:** ${order.total_amount:.2f}
+- **Estado:** {order.status}
+
+**🛍️ Productos vendidos:**
+{items_text}
+
+**💳 Método de pago:** {order.payment_method}
+**📅 Fecha:** {order.order_date.strftime('%Y-%m-%d %H:%M') if order.order_date else 'N/A'}
+
+¡El inventario ha sido actualizado automáticamente!"""
+
+            return ChatResponse(
+                response=response_text,
+                data={
+                    "order_id": order.id,
+                    "customer_id": customer_id,
+                    "customer_name": customer.name,
+                    "total_amount": float(order.total_amount),
+                    "items_count": len(resolved_items),
+                    "total_units": total_items,
+                    "items": resolved_items,
+                },
+                workflow_id=f"create-sale-{order.id}",
+            )
+
+        except Exception as e:
+            logger.error(f"Error in _handle_create_sale: {str(e)}")
+            return ChatResponse(
+                response=f"❌ Error creando venta: {str(e)}",
+                workflow_id="create-sale-error-"
+                + datetime.now().strftime("%Y%m%d-%H%M%S"),
+            )
+
+    def _parse_product_data(self, message: str) -> Dict[str, Any]:
+        """Parse product data from natural language message with flexible patterns."""
+        product_data = {}
+
+        # Extract name with multiple flexible patterns
+        name_patterns = [
+            # Traditional patterns
+            r'(?:producto[:\s]+|nombre[:\s]+)["\']([^"\']+)["\']',  # "producto: 'Lija'"
+            r"(?:producto[:\s]+|nombre[:\s]+)([^,\n]+)",  # "producto: Lija"
+            # Natural language patterns
+            r"(?:añade|añadir|agregar|crear)\s+(?:el\s+)?producto\s+([^,\s]+)",  # "Añade el producto Lija"
+            r"(?:añade|añadir|agregar|crear)\s+([^,\s]+)\s+con",  # "Añade Lija con"
+            r"producto\s+([^,\s]+)\s+(?:con|precio|valor)",  # "producto Lija con"
+            r"nuevo\s+producto[:\s]*([^,\n]+)",  # "nuevo producto: Lija"
+        ]
+
+        for pattern in name_patterns:
+            name_match = re.search(pattern, message, re.IGNORECASE)
+            if name_match:
+                product_name = name_match.group(1).strip()
+                # Clean up common words
+                product_name = re.sub(
+                    r"\s+(con|y|de|precio|valor|cantidad).*$",
+                    "",
+                    product_name,
+                    flags=re.IGNORECASE,
+                )
+                if product_name:
+                    product_data["name"] = product_name
+                    break
+
+        # Extract price with multiple patterns
+        price_patterns = [
+            r"precio[:\s]*\$?(\d+(?:\.\d{2})?)",  # "precio $500"
+            r"valor[:\s]*(?:de[:\s]*)?\$?(\d+(?:\.\d{2})?)",  # "valor de 500"
+            r"cuesta[:\s]*\$?(\d+(?:\.\d{2})?)",  # "cuesta $500"
+            r"con\s+(?:valor|precio)\s+(?:de\s+)?\$?(\d+(?:\.\d{2})?)",  # "con valor de 500"
+            r"\$(\d+(?:\.\d{2})?)",  # "$500"
+        ]
+
+        for pattern in price_patterns:
+            price_match = re.search(pattern, message, re.IGNORECASE)
+            if price_match:
+                product_data["price"] = float(price_match.group(1))
+                break
+
+        # Extract quantity with multiple patterns
+        quantity_patterns = [
+            r"cantidad[:\s]*(\d+)",  # "cantidad 20"
+            r"(\d+)\s+unidades?",  # "20 unidades"
+            r"y\s+(\d+)\s+unidades?",  # "y 20 unidades"
+            r"con\s+(\d+)\s+unidades?",  # "con 20 unidades"
+            r"stock[:\s]*(\d+)",  # "stock 20"
+            r"inventario[:\s]*(\d+)",  # "inventario 20"
+        ]
+
+        for pattern in quantity_patterns:
+            quantity_match = re.search(pattern, message, re.IGNORECASE)
+            if quantity_match:
+                product_data["quantity"] = int(quantity_match.group(1))
+                break
+
+        # Extract category (map Spanish to English)
+        category_patterns = [
+            r"categoría[:\s]*([^,\n]+)",  # "categoría electrónicos"
+            r"tipo[:\s]*([^,\n]+)",  # "tipo electrónicos"
+            r"es\s+(?:un|una)\s+([^,\n]+)",  # "es un electrónico"
+        ]
+
+        for pattern in category_patterns:
+            category_match = re.search(pattern, message, re.IGNORECASE)
+            if category_match:
+                category_spanish = category_match.group(1).strip().lower()
+                product_data["category"] = self.category_mapping.get(
+                    category_spanish, category_spanish.title()
+                )
+                break
+
         # Extract description
-        desc_match = re.search(r"descripción[:\s]*([^,\n]+)", message, re.IGNORECASE)
-        if desc_match:
-            product_data["description"] = desc_match.group(1).strip()
+        desc_patterns = [
+            r"descripción[:\s]*([^,\n]+)",  # "descripción: ..."
+            r"describe[:\s]*([^,\n]+)",  # "describe: ..."
+        ]
+
+        for pattern in desc_patterns:
+            desc_match = re.search(pattern, message, re.IGNORECASE)
+            if desc_match:
+                product_data["description"] = desc_match.group(1).strip()
+                break
 
         return product_data if product_data.get("name") else None
 
     def _parse_edit_data(self, message: str) -> Dict[str, Any]:
-        """Parse edit data from natural language message."""
+        """Parse edit data from natural language message with flexible patterns."""
         edit_data = {}
 
-        # Extract product ID
+        # Extract product ID (traditional method)
         id_match = re.search(r"(?:producto|id)[:\s]*(\d+)", message, re.IGNORECASE)
         if id_match:
             edit_data["product_id"] = int(id_match.group(1))
 
-        # Extract new name
+        # Extract product name for search (more flexible patterns)
+        product_name = None
+
+        # Pattern 1: "Actualizar [PRODUCT_NAME] a/precio..."
+        update_match = re.search(
+            r"actualizar\s+([^a-z]+?)(?:\s+a\s+|\s+precio\s+)", message, re.IGNORECASE
+        )
+        if update_match:
+            product_name = update_match.group(1).strip()
+
+        # Pattern 2: "Editar [PRODUCT_NAME] cambiar..." or "Editar producto [PRODUCT_NAME], ..."
+        edit_patterns = [
+            r"editar\s+producto\s+([^,]+?)(?:\s*,|\s+cambiar|\s+precio|\s+cantidad)",  # "Editar producto [NAME], ..."
+            r"editar\s+([^,]+?)(?:\s*,|\s+cambiar|\s+precio|\s+cantidad)",  # "Editar [NAME], ..."
+        ]
+
+        for pattern in edit_patterns:
+            edit_match = re.search(pattern, message, re.IGNORECASE)
+            if edit_match:
+                potential_name = edit_match.group(1).strip()
+                # Skip if it's just "producto" or starts with "id"
+                if (
+                    not potential_name.lower().startswith("id")
+                    and potential_name.lower() != "producto"
+                ):
+                    product_name = potential_name
+                    break
+
+        # Pattern 3: Traditional "nombre: [NAME]"
         name_match = re.search(
             r'nombre[:\s]*["\']([^"\']+)["\']|nombre[:\s]*([^,\n]+)',
             message,
@@ -931,31 +1266,199 @@ class ChatService:
         if name_match:
             edit_data["name"] = (name_match.group(1) or name_match.group(2)).strip()
 
-        # Extract new price
-        price_match = re.search(
-            r"precio[:\s]*\$?(\d+(?:\.\d{2})?)", message, re.IGNORECASE
+        # Store product name for search if found
+        if product_name:
+            edit_data["search_name"] = product_name
+
+        # Extract new price (multiple patterns)
+        price_patterns = [
+            r"precio[:\s]*a[:\s]*\$?(\d+(?:\.\d{2})?)",  # "precio a $1500"
+            r"precio[:\s]*\$?(\d+(?:\.\d{2})?)",  # "precio $1500"
+            r"\$(\d+(?:\.\d{2})?)",  # "$1500"
+        ]
+
+        for pattern in price_patterns:
+            price_match = re.search(pattern, message, re.IGNORECASE)
+            if price_match:
+                edit_data["price"] = float(price_match.group(1))
+                break
+
+        # Extract new quantity (multiple patterns)
+        quantity_patterns = [
+            r"a\s+(\d+)\s+productos?",  # "a 15 productos"
+            r"cantidad[:\s,]*a[:\s]*(\d+)",  # "cantidad a 15" or "cantidad, a 15"
+            r"cantidad[:\s,]*(\d+)",  # "cantidad 15" or "cantidad: 15"
+            r"(\d+)\s+unidades?",  # "15 unidades"
+            r",\s*cantidad\s+a\s+(\d+)",  # ", cantidad a 15"
+        ]
+
+        for pattern in quantity_patterns:
+            quantity_match = re.search(pattern, message, re.IGNORECASE)
+            if quantity_match:
+                edit_data["quantity"] = int(quantity_match.group(1))
+                break
+
+        # Return data if we have either product_id or search_name
+        return (
+            edit_data
+            if (edit_data.get("product_id") or edit_data.get("search_name"))
+            else None
         )
-        if price_match:
-            edit_data["price"] = float(price_match.group(1))
 
-        # Extract new quantity
-        quantity_match = re.search(r"cantidad[:\s]*(\d+)", message, re.IGNORECASE)
-        if quantity_match:
-            edit_data["quantity"] = int(quantity_match.group(1))
+    def _parse_sale_data(self, message: str) -> Dict[str, Any]:
+        """Parse sale data from natural language message with multiple products support."""
+        sale_data = {"items": []}
 
-        return edit_data if edit_data.get("product_id") else None
+        # Extract customer information
+        customer_patterns = [
+            r"cliente\s+([^,\n]+?)(?:\s*,|\s*$)",  # "cliente Andres"
+            r"a\s+cliente\s+([^,\n]+?)(?:\s*,|\s*$)",  # "a cliente Andres"
+            r"para\s+cliente\s+([^,\n]+?)(?:\s*,|\s*$)",  # "para cliente Andres"
+            r"cliente\s+id\s*(\d+)",  # "cliente ID 1"
+            r"customer\s+([^,\n]+?)(?:\s*,|\s*$)",  # "customer John"
+        ]
+
+        for pattern in customer_patterns:
+            customer_match = re.search(pattern, message, re.IGNORECASE)
+            if customer_match:
+                customer_info = customer_match.group(1).strip()
+                if customer_info.isdigit():
+                    sale_data["customer"] = {"type": "id", "value": int(customer_info)}
+                else:
+                    sale_data["customer"] = {"type": "name", "value": customer_info}
+                break
+
+        # Extract multiple products with quantities
+        # Pattern 1: "Vender 3 unidades de TV, 4 de vajilla, 5 de laptop"
+        products_pattern = (
+            r"(\d+)\s+(?:unidades?\s+)?de\s+([^,]+?)(?:\s*,|\s+a\s+cliente|\s*$)"
+        )
+        product_matches = re.findall(products_pattern, message, re.IGNORECASE)
+
+        for quantity_str, product_name in product_matches:
+            sale_data["items"].append(
+                {"product_name": product_name.strip(), "quantity": int(quantity_str)}
+            )
+
+        # Pattern 2: "Producto Laptop cantidad 2, Televisor x3"
+        if not sale_data["items"]:
+            # Try alternative patterns
+            alt_patterns = [
+                r"producto\s+([^,]+?)\s+cantidad\s+(\d+)",  # "producto Laptop cantidad 2"
+                r"([^,]+?)\s+x(\d+)",  # "Televisor x3"
+                r"([^,]+?)\s+cantidad\s+(\d+)",  # "Laptop cantidad 2"
+                r"(\d+)\s+([^,]+?)(?:\s*,|\s+a\s+cliente|\s*$)",  # "2 Laptops" or "2 Laptops, 1 TV"
+            ]
+
+            for pattern in alt_patterns:
+                matches = re.findall(pattern, message, re.IGNORECASE)
+                for match in matches:
+                    if pattern.startswith(r"producto") or pattern.endswith(
+                        r"cantidad\s+(\d+)"
+                    ):
+                        product_name, quantity_str = match
+                    else:
+                        if match[0].isdigit():
+                            quantity_str, product_name = match
+                        else:
+                            product_name, quantity_str = match
+
+                    # Clean up product name (remove plural 's' if present)
+                    product_name = product_name.strip()
+                    if product_name.lower().endswith("s") and len(product_name) > 3:
+                        # Try singular form for better matching
+                        singular_name = product_name[:-1]
+                        product_name = singular_name
+
+                    sale_data["items"].append(
+                        {
+                            "product_name": product_name.strip(),
+                            "quantity": int(quantity_str),
+                        }
+                    )
+
+        # Extract payment method if specified
+        payment_patterns = [
+            r"pago\s+([^,\n]+)",  # "pago efectivo"
+            r"método\s+([^,\n]+)",  # "método tarjeta"
+            r"payment\s+([^,\n]+)",  # "payment cash"
+        ]
+
+        for pattern in payment_patterns:
+            payment_match = re.search(pattern, message, re.IGNORECASE)
+            if payment_match:
+                payment_method = payment_match.group(1).strip().lower()
+                if "efectivo" in payment_method or "cash" in payment_method:
+                    sale_data["payment_method"] = "cash"
+                elif "tarjeta" in payment_method or "credit" in payment_method:
+                    sale_data["payment_method"] = "credit_card"
+                else:
+                    sale_data["payment_method"] = "credit_card"
+                break
+
+        return (
+            sale_data
+            if (sale_data.get("customer") and sale_data.get("items"))
+            else None
+        )
+
+    async def _resolve_customer(self, customer_info: Dict[str, Any]) -> Optional[int]:
+        """Resolve customer by ID or name, create if not exists."""
+        if not customer_info:
+            return None
+
+        try:
+            if customer_info["type"] == "id":
+                # Search by ID
+                customer_id = customer_info["value"]
+                customer = await self.db_service.get_customer_by_id(customer_id)
+                return customer.id if customer else None
+
+            elif customer_info["type"] == "name":
+                # Search by name or create new
+                customer_name = customer_info["value"]
+                all_customers = await self.db_service.get_all_customers()
+
+                # Try to find existing customer
+                for customer in all_customers:
+                    if (
+                        customer_name.lower() in customer.name.lower()
+                        or customer.name.lower() in customer_name.lower()
+                    ):
+                        return customer.id
+
+                # Create new customer if not found
+                new_customer = await self.db_service.create_customer(
+                    name=customer_name,
+                    email=f"{customer_name.lower().replace(' ', '.')}@example.com",
+                )
+                return new_customer.id
+
+        except Exception as e:
+            logger.error(f"Error resolving customer: {str(e)}")
+            return None
+
+        return None
 
     def _get_help_response(self) -> ChatResponse:
         """Return help response with available commands."""
-        help_text = """🤖 **Asistente de Inventario y Ventas**
+        help_text = """🤖 **SmartStock AI - Transformando la Gestión de Inventario**
 
 **Comandos disponibles:**
 
 📦 **Gestión de Inventario:**
 - *"Añadir producto: Laptop, precio $500, cantidad 10"*
 - *"Ver inventario"* o *"Mostrar productos"*
+- *"Actualizar Vajilla de porcelana a 15 productos"*
+- *"Actualizar Televisor precio a 800"*
+- *"Editar producto Vajilla de porcelana, cantidad a 15"*
 - *"Editar producto ID 1, cambiar precio a $600"*
 - *"Análisis de inventario"*
+
+🛒 **Gestión de Ventas:**
+- *"Vender 3 unidades de TV, 4 de vajilla a cliente Andres"*
+- *"Crear venta: Cliente ID 1, Producto Laptop cantidad 2"*
+- *"Nueva orden: Cliente Juan, Televisor x1, Laptop x2"*
 
 💰 **Análisis de Ventas:**
 - *"Análisis de ventas"* o *"Mostrar ingresos"*

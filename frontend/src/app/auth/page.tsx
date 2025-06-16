@@ -47,10 +47,10 @@ export default function AuthPage() {
       <div className='w-full max-w-md'>
         <div className='text-center mb-8'>
           <h1 className='text-4xl font-bold text-gray-900 mb-2'>
-            🚀 LangGraph
+            🚀 SmartStock AI
           </h1>
           <p className='text-gray-600'>
-            Asistente de Ventas e Inventario con IA
+            Transformando la Gestión de Inventario
           </p>
         </div>
 
@@ -65,7 +65,7 @@ export default function AuthPage() {
 
         <div className='mt-8 text-center'>
           <p className='text-sm text-gray-500'>
-            Aplicación de demostración con inteligencia artificial
+            Plataforma de inteligencia artificial para gestión empresarial
           </p>
         </div>
       </div>
