@@ -1,0 +1,39 @@
+services:
+  # API Service
+  - type: web
+    name: sales-api
+    env: python
+    plan: free
+    region: oregon
+    rootDir: api
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: JWT_SECRET_KEY
+        value: FJ3VW5B-DZ2rzMlM8ibGMqq-ByRK5znAB0_YQKRDAUs
+      - key: DATABASE_URL
+        value: sqlite:///./sales_inventory.db
+      - key: ENVIRONMENT
+        value: production
+
+  # Frontend Service
+  - type: web
+    name: sales-frontend
+    env: node
+    plan: free
+    region: oregon
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 18.17.0
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: sales-api
+          property: host
