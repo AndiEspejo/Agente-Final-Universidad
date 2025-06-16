@@ -198,21 +198,28 @@ const CreateSaleModal: React.FC<CreateSaleModalProps> = ({
       const result = await response.json();
 
       // Notify parent component
+      const inventoryUpdates =
+        result.inventory_updates && Array.isArray(result.inventory_updates)
+          ? result.inventory_updates
+              .map(
+                (update: {
+                  product_name: string;
+                  previous_quantity: number;
+                  new_quantity: number;
+                  quantity_sold: number;
+                }) =>
+                  `• ${update.product_name}: ${update.previous_quantity} → ${update.new_quantity} (-${update.quantity_sold})`
+              )
+              .join('\n')
+          : 'Inventario actualizado correctamente';
+
       const message = `🎉 **¡Venta Creada Exitosamente!**\n\n**Orden:** ${
-        result.order.order_number
-      }\n**Total:** $${result.order.total_amount.toFixed(2)}\n**Productos:** ${
-        result.order.items_count
-      }\n\n**Inventario Actualizado:**\n${result.inventory_updates
-        .map(
-          (update: {
-            product_name: string;
-            previous_quantity: number;
-            new_quantity: number;
-            quantity_sold: number;
-          }) =>
-            `• ${update.product_name}: ${update.previous_quantity} → ${update.new_quantity} (-${update.quantity_sold})`
-        )
-        .join('\n')}`;
+        result.order?.order_number || 'N/A'
+      }\n**Total:** $${(result.order?.total_amount || 0).toFixed(
+        2
+      )}\n**Productos:** ${
+        result.order?.items_count || cart.length
+      }\n\n**Inventario Actualizado:**\n${inventoryUpdates}`;
 
       onSaleCreated(message);
       onClose();

@@ -419,8 +419,29 @@ class ChatService:
                     ),
                 )
 
-            # Save to cache
-            self._save_analysis_to_cache("inventory", result)
+            # Get analytics data for summary
+            analytics_data = await self.db_service.get_analytics_data()
+            summary = analytics_data["summary"]
+
+            # Format data for email cache with proper structure
+            email_data = {
+                "analysis_type": "inventory",
+                "summary": {
+                    "total_items": summary.get("total_products", 0),
+                    "total_units": summary.get("total_units", 0),
+                    "total_value": result["analysis"]["total_value"],
+                    "critical_items_count": result["analysis"]["low_stock_count"],
+                    "analysis_date": result["analysis"]["analysis_date"],
+                },
+                "recommendations": result["analysis"]["recommendations"],
+                "insights": result["text_report"],
+                "charts": result["charts"],
+                "categories": result["analysis"]["categories"],
+                "top_products": result["analysis"]["top_products"],
+            }
+
+            # Save formatted data to cache
+            self._save_analysis_to_cache("inventory", email_data)
 
             return ChatResponse(
                 response=result["text_report"],
@@ -932,12 +953,13 @@ class ChatService:
                     + datetime.now().strftime("%Y%m%d-%H%M%S"),
                 )
 
-            # Send email
+            # Send email with complete analysis data
             success = send_analysis_report(
                 recipient_email=recipient_email,
                 report_type=report_type,
                 charts=charts,
                 summary=summary,
+                analysis_data=last_analysis_data,
             )
 
             if success:
@@ -974,20 +996,36 @@ class ChatService:
             customers = await self.db_service.get_all_customers()
             analytics_data = await self.db_service.get_analytics_data()
 
-            # Generate charts (same logic as in _handle_sales_analysis)
-            charts = await self._generate_sales_charts(
+            # Generate charts metadata (same logic as in _handle_sales_analysis)
+            charts_metadata = await self._generate_sales_charts(
                 orders, customers, analytics_data
             )
 
-            # Convert charts to the format expected by email service
+            # Generate actual base64 images from metadata
             email_charts = []
-            for i, chart in enumerate(charts):
-                email_charts.append(
-                    {
-                        "name": f"ventas_grafica_{i+1}.png",
-                        "data": chart,  # Assuming chart is already base64
-                    }
+            chart_names = [
+                "Ventas por Período",
+                "Ventas por Cliente",
+                "Top Productos Vendidos",
+                "Ingresos Totales",
+                "Tendencias de Ventas",
+            ]
+
+            for i, chart_metadata in enumerate(charts_metadata):
+                chart_name = (
+                    chart_names[i] if i < len(chart_names) else f"Gráfica {i+1}"
                 )
+
+                # Generate base64 image from metadata
+                base64_image = await self._generate_chart_image(chart_metadata)
+
+                if base64_image:
+                    email_charts.append(
+                        {
+                            "name": chart_name,
+                            "data": base64_image,
+                        }
+                    )
 
             return email_charts
 
@@ -1001,21 +1039,179 @@ class ChatService:
             # Get fresh inventory data
             result = await self.inventory_agent.analyze_inventory()
 
-            # Extract charts from the result
-            charts = result.get("charts", [])
+            # Extract charts from the result (these are metadata, not images)
+            charts_metadata = result.get("charts", [])
 
-            # Convert charts to the format expected by email service
+            # Generate actual base64 images from metadata
             email_charts = []
-            for i, chart in enumerate(charts):
-                email_charts.append(
-                    {
-                        "name": f"inventario_grafica_{i+1}.png",
-                        "data": chart,  # Assuming chart is already base64
-                    }
+            chart_names = [
+                "Estados de Stock",
+                "Categorías por Valor",
+                "Distribución de Cantidades",
+                "Productos más Valiosos",
+                "Urgencia de Restock",
+            ]
+
+            for i, chart_metadata in enumerate(charts_metadata):
+                chart_name = (
+                    chart_names[i] if i < len(chart_names) else f"Gráfica {i+1}"
                 )
+
+                # Generate base64 image from metadata
+                base64_image = await self._generate_chart_image(chart_metadata)
+
+                if base64_image:
+                    email_charts.append(
+                        {
+                            "name": chart_name,
+                            "data": base64_image,
+                        }
+                    )
 
             return email_charts
 
         except Exception as e:
             logger.error(f"Error regenerating inventory charts: {str(e)}")
             return []
+
+    async def _generate_chart_image(self, chart_metadata: Dict) -> str:
+        """Generate base64 image from chart metadata."""
+        try:
+            import matplotlib.pyplot as plt
+            import matplotlib.patches as mpatches
+            from io import BytesIO
+            import base64
+
+            # Set up the figure
+            plt.style.use("default")
+            fig, ax = plt.subplots(figsize=(10, 6))
+            fig.patch.set_facecolor("white")
+
+            chart_type = chart_metadata.get("type", "bar")
+            data = chart_metadata.get("data", [])
+            title = chart_metadata.get("title", "Gráfica")
+
+            if not data:
+                return ""
+
+            if chart_type == "pie":
+                # PIE CHART
+                labels = [item.get("name", "") for item in data]
+                values = [item.get("value", 0) for item in data]
+                colors = [item.get("color", "#3B82F6") for item in data]
+
+                wedges, texts, autotexts = ax.pie(
+                    values,
+                    labels=labels,
+                    colors=colors,
+                    autopct="%1.1f%%",
+                    startangle=90,
+                )
+
+                # Improve text formatting
+                for autotext in autotexts:
+                    autotext.set_color("white")
+                    autotext.set_fontweight("bold")
+
+            elif chart_type == "bar":
+                # BAR CHART
+                labels = [item.get("name", "") for item in data]
+
+                # Find the first numeric field for values
+                value_key = None
+                for key in data[0].keys() if data else []:
+                    if key != "name" and isinstance(data[0].get(key), (int, float)):
+                        value_key = key
+                        break
+
+                if value_key:
+                    values = [item.get(value_key, 0) for item in data]
+                    bars = ax.bar(labels, values, color="#3B82F6", alpha=0.8)
+
+                    # Add value labels on bars
+                    for bar, value in zip(bars, values):
+                        height = bar.get_height()
+                        ax.text(
+                            bar.get_x() + bar.get_width() / 2.0,
+                            height + max(values) * 0.01,
+                            f"{value:,.0f}",
+                            ha="center",
+                            va="bottom",
+                            fontweight="bold",
+                        )
+
+                    ax.set_ylabel(value_key.title())
+
+                    # Rotate x-axis labels if they're long
+                    if any(len(label) > 10 for label in labels):
+                        plt.xticks(rotation=45, ha="right")
+
+            elif chart_type == "line":
+                # LINE CHART
+                labels = [item.get("name", "") for item in data]
+
+                # Find the first numeric field for values
+                value_key = None
+                for key in data[0].keys() if data else []:
+                    if key != "name" and isinstance(data[0].get(key), (int, float)):
+                        value_key = key
+                        break
+
+                if value_key:
+                    values = [item.get(value_key, 0) for item in data]
+
+                    # Create line plot
+                    ax.plot(
+                        labels,
+                        values,
+                        color="#3B82F6",
+                        marker="o",
+                        linewidth=2,
+                        markersize=6,
+                    )
+
+                    # Add value labels on points
+                    for i, (label, value) in enumerate(zip(labels, values)):
+                        ax.annotate(
+                            f"{value:,.0f}",
+                            (i, value),
+                            textcoords="offset points",
+                            xytext=(0, 10),
+                            ha="center",
+                            fontweight="bold",
+                            fontsize=8,
+                        )
+
+                    ax.set_ylabel(value_key.title())
+                    ax.set_xlabel("Fecha")
+
+                    # Rotate x-axis labels for better readability
+                    plt.xticks(rotation=45, ha="right")
+
+            # Set title and styling
+            ax.set_title(title, fontsize=14, fontweight="bold", pad=20)
+            ax.grid(True, alpha=0.3)
+
+            # Improve layout
+            plt.tight_layout()
+
+            # Convert to base64
+            buffer = BytesIO()
+            plt.savefig(
+                buffer,
+                format="png",
+                dpi=150,
+                bbox_inches="tight",
+                facecolor="white",
+                edgecolor="none",
+            )
+            buffer.seek(0)
+
+            image_base64 = base64.b64encode(buffer.read()).decode("utf-8")
+            plt.close(fig)  # Clean up
+
+            return f"data:image/png;base64,{image_base64}"
+
+        except Exception as e:
+            logger.error(f"Error generating chart image: {str(e)}")
+            return ""
