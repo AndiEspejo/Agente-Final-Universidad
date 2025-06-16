@@ -376,11 +376,24 @@ class ChatService:
 - **Productos con stock bajo:** {summary["low_stock_items"]}
 - **Valor total estimado:** ${sum(p["price"] * p["stock_quantity"] for p in products_with_stock):.2f}"""
 
+            # Transform summary to match frontend expectations
+            frontend_summary = {
+                "total_items": summary.get("total_products", 0),
+                "critical_items_count": len(
+                    critical_items
+                ),  # Use actual critical count
+                "low_stock_items_count": len(low_items),  # Use actual low stock count
+                "recommendations_count": 0,  # Default for listing
+                "charts_generated": 0,  # Default for listing
+                "ai_interactions": 0,  # Default for listing
+                "tools_used": ["list_inventory"],
+            }
+
             return ChatResponse(
                 response=inventory_text,
                 data={
                     "products": products_with_stock,
-                    "summary": summary,
+                    "summary": frontend_summary,
                     "categories": {
                         "normal": len(normal_items),
                         "low": len(low_items),
@@ -571,11 +584,22 @@ class ChatService:
             # Prepare daily sales data
             daily_sales = {}
             for order in orders:
-                order_date = order.get("order_date", "")[:10]  # Get date only
+                # Handle both dict (from analytics_data) and SQLAlchemy object (from get_all_orders)
+                if isinstance(order, dict):
+                    order_date = (
+                        order.get("order_date", "")[:10]
+                        if order.get("order_date")
+                        else ""
+                    )
+                    total_amount = order["total_amount"]
+                else:
+                    order_date = str(order.order_date)[:10] if order.order_date else ""
+                    total_amount = order.total_amount
+
                 if order_date:
                     if order_date not in daily_sales:
                         daily_sales[order_date] = 0
-                    daily_sales[order_date] += float(order["total_amount"])
+                    daily_sales[order_date] += float(total_amount)
 
             # Sort by date and prepare chart data
             sorted_dates = sorted(daily_sales.keys())
@@ -655,14 +679,57 @@ class ChatService:
                     }
                 )
 
-            # 3. TOP PRODUCTS BY REVENUE (Bar Chart) - Con labels corregidos
+            # 3. TOP PRODUCTS BY REVENUE (Bar Chart) - Con nombres reales de productos
             product_revenue = {}
+
+            # Get real product data from order_items
             for order in orders:
-                # For now, simulate product data from order info
-                product_name = f"Producto #{order.get('id', 'N/A')}"
-                if product_name not in product_revenue:
-                    product_revenue[product_name] = 0
-                product_revenue[product_name] += float(order["total_amount"])
+                # Handle both dict and SQLAlchemy object
+                if isinstance(order, dict):
+                    order_items = order.get(
+                        "items", []
+                    )  # From analytics_data uses "items"
+                else:
+                    order_items = (
+                        order.order_items if hasattr(order, "order_items") else []
+                    )
+
+                # Process each item in the order
+                for item in order_items:
+                    if isinstance(item, dict):
+                        product_name = item.get(
+                            "product_name", f"Producto #{item.get('product_id', 'N/A')}"
+                        )
+                        total_price = item.get("total_price", 0)
+                    else:
+                        # For SQLAlchemy objects, get product name from relationship
+                        product_name = (
+                            item.product.name
+                            if hasattr(item, "product") and item.product
+                            else f"Producto #{item.product_id if hasattr(item, 'product_id') else 'N/A'}"
+                        )
+                        total_price = (
+                            item.total_price if hasattr(item, "total_price") else 0
+                        )
+
+                    if product_name not in product_revenue:
+                        product_revenue[product_name] = 0
+                    product_revenue[product_name] += float(total_price)
+
+            # If no product data found, fall back to order-based grouping
+            if not product_revenue:
+                for order in orders:
+                    if isinstance(order, dict):
+                        order_id = order.get("id", "N/A")
+                        total_amount = order["total_amount"]
+                    else:
+                        order_id = order.id if order.id else "N/A"
+                        total_amount = order.total_amount
+
+                    product_name = f"Orden #{order_id}"
+                    if product_name not in product_revenue:
+                        product_revenue[product_name] = 0
+                    product_revenue[product_name] += float(total_amount)
 
             # Get top 5 products
             top_products = sorted(
@@ -996,9 +1063,17 @@ class ChatService:
             customers = await self.db_service.get_all_customers()
             analytics_data = await self.db_service.get_analytics_data()
 
+            logger.info(
+                f"📊 Sales charts: Found {len(orders)} orders for chart generation"
+            )
+
             # Generate charts metadata (same logic as in _handle_sales_analysis)
             charts_metadata = await self._generate_sales_charts(
                 orders, customers, analytics_data
+            )
+
+            logger.info(
+                f"📊 Sales charts: Generated {len(charts_metadata)} chart metadata objects"
             )
 
             # Generate actual base64 images from metadata
@@ -1016,6 +1091,10 @@ class ChatService:
                     chart_names[i] if i < len(chart_names) else f"Gráfica {i+1}"
                 )
 
+                logger.info(
+                    f"📊 Processing chart {i+1}: {chart_metadata.get('title', 'N/A')} (type: {chart_metadata.get('type', 'N/A')})"
+                )
+
                 # Generate base64 image from metadata
                 base64_image = await self._generate_chart_image(chart_metadata)
 
@@ -1026,7 +1105,13 @@ class ChatService:
                             "data": base64_image,
                         }
                     )
+                    logger.info(f"✅ Chart {i+1} generated successfully")
+                else:
+                    logger.warning(f"❌ Chart {i+1} failed to generate")
 
+            logger.info(
+                f"📊 Sales charts: Successfully generated {len(email_charts)} charts for email"
+            )
             return email_charts
 
         except Exception as e:
@@ -1091,7 +1176,12 @@ class ChatService:
             data = chart_metadata.get("data", [])
             title = chart_metadata.get("title", "Gráfica")
 
+            logger.info(
+                f"📊 Generating chart: {title}, type: {chart_type}, data points: {len(data)}"
+            )
+
             if not data:
+                logger.warning(f"📊 No data available for chart: {title}")
                 return ""
 
             if chart_type == "pie":

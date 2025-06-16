@@ -279,7 +279,8 @@ class DatabaseService:
         """Get all orders with items and customer info."""
         result = await self.session.execute(
             select(Order).options(
-                selectinload(Order.order_items), selectinload(Order.customer)
+                selectinload(Order.order_items).selectinload(OrderItem.product),
+                selectinload(Order.customer),
             )
         )
         return result.scalars().all()
@@ -340,6 +341,9 @@ class DatabaseService:
         return {
             "id": item.id,
             "product_id": item.product_id,
+            "product_name": (
+                item.product.name if item.product else f"Producto #{item.product_id}"
+            ),
             "quantity": item.quantity,
             "unit_price": float(item.unit_price),
             "total_price": float(item.total_price),

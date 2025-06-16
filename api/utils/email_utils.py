@@ -122,14 +122,27 @@ class EmailService:
 
         # Generate chart image tags
         chart_images = ""
+        logger.info(
+            f"📊 Email template: Processing {len(charts)} charts for {report_type}"
+        )
+
         for i, chart in enumerate(charts):
             chart_name = chart.get("name", f"Chart {i+1}")
+            logger.info(f"📊 Adding chart to email: {chart_name}")
             chart_images += f"""
             <div style="margin: 20px 0; text-align: center;">
                 <h3 style="color: #1f2937; margin-bottom: 10px;">{chart_name}</h3>
                 <img src="cid:chart{i}" style="max-width: 100%; height: auto; border: 1px solid #e5e7eb; border-radius: 8px;" alt="{chart_name}">
             </div>
             """
+
+        if not charts:
+            chart_images = """
+            <div style="margin: 20px 0; text-align: center; color: #6b7280;">
+                <p>No hay gráficas disponibles para este análisis.</p>
+            </div>
+            """
+            logger.warning(f"📊 No charts available for {report_type} email")
 
         # Generate detailed analysis sections based on report type
         categories_html = ""

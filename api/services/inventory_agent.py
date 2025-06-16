@@ -216,19 +216,12 @@ class InventoryAgent:
             if category_chart:
                 charts.append(category_chart)
 
-            # 3. STOCK QUANTITY DISTRIBUTION (Bar Chart)
-            quantity_chart = self._create_quantity_distribution_chart(
-                products_with_stock
-            )
-            if quantity_chart:
-                charts.append(quantity_chart)
-
-            # 4. TOP PRODUCTS BY VALUE (Bar Chart)
+            # 3. TOP PRODUCTS BY VALUE (Bar Chart)
             top_products_chart = self._create_top_products_chart(products_with_stock)
             if top_products_chart:
                 charts.append(top_products_chart)
 
-            # 5. RESTOCK URGENCY (Bar Chart)
+            # 4. RESTOCK URGENCY (Bar Chart)
             restock_chart = self._create_restock_urgency_chart(products_with_stock)
             if restock_chart:
                 charts.append(restock_chart)
@@ -281,9 +274,20 @@ class InventoryAgent:
                 "data": status_data,
                 "summary": {
                     "total_productos": len(products_with_stock),
-                    "productos_criticos": status_counts.get("Crítico", 0)
-                    + status_counts.get("Agotado", 0),
-                    "productos_saludables": status_counts.get("Normal", 0),
+                    "productos_criticos": len(
+                        [
+                            p
+                            for p in products_with_stock
+                            if p["stock_status"] in ["crítico", "agotado"]
+                        ]
+                    ),
+                    "productos_saludables": len(
+                        [
+                            p
+                            for p in products_with_stock
+                            if p["stock_status"] == "normal"
+                        ]
+                    ),
                 },
             }
         return None
@@ -322,51 +326,6 @@ class InventoryAgent:
             }
         return None
 
-    def _create_quantity_distribution_chart(
-        self, products_with_stock: List[Dict]
-    ) -> Dict:
-        """Create stock quantity distribution chart."""
-        stock_ranges = {
-            "Sin Stock": 0,
-            "1-10 uni": 0,
-            "11-50 uni": 0,
-            "51-100 uni": 0,
-            "100+ uni": 0,
-        }
-
-        for product in products_with_stock:
-            qty = product["stock_quantity"]
-            if qty == 0:
-                stock_ranges["Sin Stock"] += 1
-            elif qty <= 10:
-                stock_ranges["1-10 uni"] += 1
-            elif qty <= 50:
-                stock_ranges["11-50 uni"] += 1
-            elif qty <= 100:
-                stock_ranges["51-100 uni"] += 1
-            else:
-                stock_ranges["100+ uni"] += 1
-
-        stock_dist_data = []
-        for range_name, count in stock_ranges.items():
-            if count > 0:
-                stock_dist_data.append({"name": range_name, "productos": count})
-
-        if stock_dist_data:
-            most_common = max(stock_ranges.items(), key=lambda x: x[1])
-            return {
-                "type": "bar",
-                "title": "📦 Distribución de Cantidad en Stock",
-                "data": stock_dist_data,
-                "summary": {
-                    "rango_mas_comun": most_common[0] if most_common[1] > 0 else "N/A",
-                    "productos_sin_stock": stock_ranges["Sin Stock"],
-                    "productos_bien_surtidos": stock_ranges["51-100 uni"]
-                    + stock_ranges["100+ uni"],
-                },
-            }
-        return None
-
     def _create_top_products_chart(self, products_with_stock: List[Dict]) -> Dict:
         """Create top products by value chart."""
         top_products = sorted(
@@ -387,7 +346,6 @@ class InventoryAgent:
                 {
                     "name": short_name,
                     "valor": round(value, 2),
-                    "cantidad": product["stock_quantity"],
                     "precio": product["price"],
                 }
             )
@@ -412,11 +370,10 @@ class InventoryAgent:
         return None
 
     def _create_restock_urgency_chart(self, products_with_stock: List[Dict]) -> Dict:
-        """Create restock urgency chart."""
+        """Create restock urgency chart showing only current stock."""
         urgent_restock = []
         for product in products_with_stock:
             if product["stock_status"] in ["crítico", "agotado"]:
-                urgency_score = 100 if product["stock_status"] == "agotado" else 75
                 product_name = product["name"]
                 short_name = (
                     product_name
@@ -427,14 +384,14 @@ class InventoryAgent:
                 urgent_restock.append(
                     {
                         "name": short_name,
-                        "urgencia": urgency_score,
                         "stock_actual": product["stock_quantity"],
                         "categoria": product.get("category", "Otros"),
+                        "status": product["stock_status"],
                     }
                 )
 
-        # Sort by urgency and take top 10
-        urgent_restock.sort(key=lambda x: x["urgencia"], reverse=True)
+        # Sort by stock quantity (ascending - lowest first) and take top 10
+        urgent_restock.sort(key=lambda x: x["stock_actual"])
         urgent_restock = urgent_restock[:10]
 
         if urgent_restock:
@@ -445,10 +402,10 @@ class InventoryAgent:
                 "summary": {
                     "productos_urgentes": len(urgent_restock),
                     "productos_agotados": len(
-                        [p for p in urgent_restock if p["urgencia"] == 100]
+                        [p for p in urgent_restock if p["status"] == "agotado"]
                     ),
                     "productos_criticos": len(
-                        [p for p in urgent_restock if p["urgencia"] == 75]
+                        [p for p in urgent_restock if p["status"] == "crítico"]
                     ),
                 },
             }
