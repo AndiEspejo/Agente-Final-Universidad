@@ -1,0 +1,103 @@
+# Core LangGraph and AI dependencies
+langgraph>=0.2.0
+pydantic>=2.5.0
+python-dotenv>=1.0.0
+google-generativeai==0.3.1
+
+# JWT and authentication
+pyjwt>=2.8.0
+cryptography>=41.0.0
+
+# Data processing and analysis
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Visualization dependencies
+matplotlib>=3.7.0
+plotly>=5.15.0
+seaborn>=0.13.0
+
+# Image processing for chart exports
+pillow>=10.0.0
+kaleido>=0.2.1
+
+# HTTP and API dependencies
+httpx>=0.24.0
+requests>=2.31.0
+
+# Database support
+sqlalchemy>=2.0.0
+alembic>=1.11.0
+asyncpg>=0.28.0  # PostgreSQL driver
+aiosqlite>=0.19.0  # SQLite async driver
+greenlet>=3.0.0  # Required for SQLAlchemy async
+
+# Development and testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+
+# Email validation for Pydantic models
+email-validator>=2.0.0
+
+# Logging and monitoring
+structlog>=23.1.0
+
+# Configuration management
+pyyaml>=6.0.0
+toml>=0.10.2
+
+# Data validation and serialization
+marshmallow>=3.20.0
+jsonschema>=4.19.0
+
+# File and media processing
+ffmpeg-python>=0.2.0
+
+# Scientific computing
+scipy>=1.11.0
+
+# Date and time utilities
+python-dateutil>=2.8.0
+pytz>=2023.3
+
+# UUID and unique identifiers
+shortuuid>=1.0.11
+
+# Progress bars and CLI utilities
+tqdm>=4.65.0
+click>=8.1.0
+
+# Caching
+redis>=4.6.0
+cachetools>=5.3.0
+
+# Environment and system utilities
+psutil>=5.9.0
+pathlib2>=2.3.7
+
+# Network and URL utilities
+urllib3>=2.0.0
+yarl>=1.9.0
+
+# Text processing
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
+
+# Optional ML/AI dependencies
+scikit-learn>=1.3.0
+transformers>=4.30.0
+
+# Web framework (if needed for API)
+fastapi==0.104.1
+uvicorn==0.24.0
+
+# Background tasks
+celery>=5.3.0
+
+# Monitoring and metrics
+prometheus-client>=0.17.0
+
+# Authentication dependencies
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.6 
