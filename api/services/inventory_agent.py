@@ -305,7 +305,6 @@ class InventoryAgent:
                 {
                     "name": short_category,
                     "valor": round(data["value"], 2),
-                    "productos": data["count"],
                 }
             )
 

@@ -1464,6 +1464,11 @@ class ChatService:
 - *"Análisis de ventas"* o *"Mostrar ingresos"*
 - *"Rendimiento de cliente"*
 
+📧 **Envío de Reportes por Email:**
+- *"Enviar reporte de inventario a admin@empresa.com"* (genera automáticamente)
+- *"Mandar análisis de ventas a correo@ejemplo.com"* (genera automáticamente)
+- *"Send inventory report to user@domain.com"* (genera automáticamente)
+
 ✨ **Ejemplos de uso:**
 - *"Agregar producto: Televisor Samsung, precio $800, cantidad 5, categoría electrónicos"*
 - *"Qué elementos hay en el inventario?"*
@@ -1477,7 +1482,7 @@ class ChatService:
         )
 
     async def _handle_email_request(self, message: str) -> ChatResponse:
-        """Handle email sending requests."""
+        """Handle email sending requests with automatic report generation."""
         try:
             logger.info(f"📧 EMAIL_REQUEST: Processing message: {message}")
 
@@ -1495,27 +1500,72 @@ class ChatService:
 
             recipient_email = email_matches[0]
 
-            # Get analysis data from cache
+            # Determine report type from message content
+            message_lower = message.lower()
+            requested_report_type = None
+
+            # Check for specific report type requests using word boundaries
+            # Sales keywords with word boundaries to avoid partial matches
+            sales_patterns = [
+                r"\bventas\b",
+                r"\bsales\b",
+                r"\bingresos\b",
+                r"\brevenue\b",
+                r"\brendimiento\b",
+                r"\bventa\b",
+                r"\borders\b",
+                r"\bórdenes\b",
+                r"\bclientes\b",
+                r"\bcustomers\b",
+            ]
+
+            if any(re.search(pattern, message_lower) for pattern in sales_patterns):
+                requested_report_type = "sales"
+            else:
+                # Inventory keywords with word boundaries
+                inventory_patterns = [
+                    r"\binventario\b",
+                    r"\binventory\b",
+                    r"\bproductos\b",
+                    r"\bproducts\b",
+                    r"\bstock\b",
+                    r"\balmacén\b",
+                    r"\bwarehouse\b",
+                    r"\bexistencias\b",
+                ]
+
+                if any(
+                    re.search(pattern, message_lower) for pattern in inventory_patterns
+                ):
+                    requested_report_type = "inventory"
+
+            # Get analysis data from cache first
             last_analysis_type, last_analysis_data = self._get_analysis_from_cache()
 
-            # Check if we have a recent analysis to send
-            if not last_analysis_type or not last_analysis_data:
-                return ChatResponse(
-                    response="❌ No hay análisis reciente para enviar. "
-                    "Primero solicita un análisis de ventas o inventario, luego podrás enviarlo por email.",
-                    workflow_id="email-no-analysis-"
-                    + datetime.now().strftime("%Y%m%d-%H%M%S"),
-                )
+            # If no specific type requested, use cached analysis
+            if not requested_report_type and last_analysis_type:
+                requested_report_type = last_analysis_type
+                logger.info(f"📧 Using cached analysis type: {requested_report_type}")
+            elif not requested_report_type:
+                # Default to inventory if no cache and no specific request
+                requested_report_type = "inventory"
+                logger.info(f"📧 Defaulting to inventory analysis")
 
-            # Determine report type and regenerate charts
-            if last_analysis_type == "sales":
+            # Generate or use cached analysis data
+            if requested_report_type == "sales":
                 report_type = "Análisis de Ventas"
                 charts = await self._regenerate_sales_charts()
-                summary = f"Análisis de ventas - Total: ${last_analysis_data.get('total_sales', 0):,.2f}, Órdenes: {last_analysis_data.get('total_orders', 0)}"
-            elif last_analysis_type == "inventory":
+
+                # Get fresh sales data for summary - calculate from order total_amount
+                orders = await self.db_service.get_all_orders()
+                total_sales = sum(order.total_amount or 0 for order in orders)
+                summary = f"Análisis de ventas - Total: ${total_sales:,.2f}, Órdenes: {len(orders)}"
+
+            elif requested_report_type == "inventory":
                 report_type = "Análisis de Inventario"
                 charts = await self._regenerate_inventory_charts()
                 summary = "Análisis completo del estado actual del inventario"
+
             else:
                 return ChatResponse(
                     response="❌ Tipo de análisis no reconocido para envío por email.",
@@ -1523,20 +1573,60 @@ class ChatService:
                     + datetime.now().strftime("%Y%m%d-%H%M%S"),
                 )
 
-            # Send email with complete analysis data
+                # Send email with complete analysis data
+            # Always provide analysis data to ensure HTML embedded images (not attachments)
+            if not last_analysis_data:
+                # Generate basic analysis data for HTML formatting
+                if requested_report_type == "sales":
+                    orders = await self.db_service.get_all_orders()
+                    total_sales = sum(order.total_amount or 0 for order in orders)
+                    analysis_data_to_send = {
+                        "total_orders": len(orders),
+                        "total_sales": total_sales,
+                        "average_order": total_sales / len(orders) if orders else 0,
+                        "analysis_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "report_type": report_type,
+                    }
+                else:
+                    # Basic inventory data
+                    products = await self.db_service.get_all_products()
+                    analysis_data_to_send = {
+                        "summary": {
+                            "total_items": len(products),
+                            "total_units": sum(
+                                getattr(p, "quantity", 0) for p in products
+                            ),
+                            "total_value": sum(
+                                p.price * getattr(p, "quantity", 0) for p in products
+                            ),
+                            "critical_items_count": 0,
+                        },
+                        "analysis_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "report_type": report_type,
+                    }
+            else:
+                analysis_data_to_send = last_analysis_data
+
             success = send_analysis_report(
                 recipient_email=recipient_email,
                 report_type=report_type,
                 charts=charts,
                 summary=summary,
-                analysis_data=last_analysis_data,
+                analysis_data=analysis_data_to_send,
             )
 
             if success:
+                # Determine if analysis was generated fresh or from cache
+                generation_info = ""
+                if last_analysis_data:
+                    generation_info = "(usando análisis previo)"
+                else:
+                    generation_info = "(generado automáticamente)"
+
                 return ChatResponse(
                     response=f"✅ **Reporte enviado exitosamente** 📧\n\n"
                     f"**Destinatario:** {recipient_email}\n"
-                    f"**Tipo:** {report_type}\n"
+                    f"**Tipo:** {report_type} {generation_info}\n"
                     f"**Gráficas incluidas:** {len(charts)}\n\n"
                     f"El reporte ha sido enviado con todas las gráficas del análisis.",
                     workflow_id="email-sent-"
