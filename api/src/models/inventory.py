@@ -16,17 +16,17 @@ from src.models.base import BaseEntity
 
 
 class ProductCategory(str, Enum):
-    """Product categories supported by the system."""
+    """Categorías de productos soportadas por el sistema."""
 
-    ELECTRONICS = "Electronics"
-    FURNITURE = "Furniture"
-    APPLIANCES = "Appliances"
-    CLOTHING = "Clothing"
-    BOOKS = "Books"
-    SPORTS = "Sports"
-    AUTOMOTIVE = "Automotive"
-    FOOD = "Food"
-    OTHER = "Other"
+    ELECTRONICOS = "Electrónicos"
+    MUEBLES = "Muebles"
+    ELECTRODOMESTICOS = "Electrodomésticos"
+    ROPA = "Ropa"
+    LIBROS = "Libros"
+    DEPORTES = "Deportes"
+    AUTOMOVILES = "Automóviles"
+    ALIMENTOS = "Alimentos"
+    OTROS = "Otros"
 
 
 class ProductStatus(str, Enum):
@@ -173,13 +173,13 @@ class Product(BaseEntity):
 
 
 class InventoryLocation(str, Enum):
-    """Available inventory storage locations."""
+    """Ubicaciones de almacenamiento de inventario disponibles."""
 
-    WAREHOUSE_A = "Warehouse A"
-    WAREHOUSE_B = "Warehouse B"
-    WAREHOUSE_C = "Warehouse C"
-    RETAIL_STORE = "Retail Store"
-    DISTRIBUTION_CENTER = "Distribution Center"
+    ALMACEN_PRINCIPAL = "Almacén Principal"
+    ALMACEN_SECUNDARIO = "Almacén Secundario"
+    ALMACEN_TERCIARIO = "Almacén Terciario"
+    TIENDA_MINORISTA = "Tienda Minorista"
+    CENTRO_DISTRIBUCION = "Centro de Distribución"
 
 
 class InventoryStatus(str, Enum):

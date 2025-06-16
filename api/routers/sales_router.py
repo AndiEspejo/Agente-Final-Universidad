@@ -10,7 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from auth import User, get_current_active_user
 from database import get_async_session
 from models.api_models import ChatResponse, SalesOrderRequest
-from models.database_models import OrderStatus
+
+# Removed enum import - using strings directly
 from services.database_service import DatabaseService
 
 
@@ -43,7 +44,6 @@ async def create_order_with_inventory_sync(
         )
 
         db_service = DatabaseService(session)
-
 
         # Validate customer exists (create default if not)
         customer = await db_service.get_customer_by_id(order_data.customer_id)
@@ -135,7 +135,7 @@ async def create_order_with_inventory_sync(
 - **Cliente ID:** {order.customer_id}
 - **Método de Pago:** {order.payment_method}
 - **Total:** ${order.total_amount:.2f}
-- **Estado:** {order.status.value}
+- **Estado:** {order.status}
 
 **Productos Vendidos:**
 {order_items_text}
@@ -152,8 +152,13 @@ Se ha actualizado automáticamente el stock de todos los productos vendidos.
                 "customer_id": order.customer_id,
                 "total_amount": float(order.total_amount),
                 "payment_method": order.payment_method,
-                "status": order.status.value,
+                "status": order.status,
                 "inventory_updates": inventory_updates,
+                "items_count": len(order_items_data),
+            },
+            order={
+                "order_number": f"ORD-{order.id:06d}",
+                "total_amount": float(order.total_amount),
                 "items_count": len(order_items_data),
             },
             workflow_id=f"create-order-{order.id}",
@@ -185,7 +190,7 @@ async def list_orders(
                     "customer_name": (
                         order.customer.name if order.customer else "Cliente Desconocido"
                     ),
-                    "status": order.status.value,
+                    "status": order.status,
                     "payment_method": order.payment_method,
                     "total_amount": float(order.total_amount),
                     "order_date": (
@@ -247,7 +252,7 @@ async def get_order_details(
                 "customer_name": (
                     order.customer.name if order.customer else "Cliente Desconocido"
                 ),
-                "status": order.status.value,
+                "status": order.status,
                 "payment_method": order.payment_method,
                 "total_amount": float(order.total_amount),
                 "order_date": (
@@ -279,12 +284,18 @@ async def update_order_status(
         db_service = DatabaseService(session)
 
         # Validate status
-        try:
-            new_status = OrderStatus(status)
-        except ValueError:
+        valid_statuses = [
+            "Pendiente",
+            "Confirmada",
+            "Procesando",
+            "Enviada",
+            "Entregada",
+            "Cancelada",
+        ]
+        if status not in valid_statuses:
             raise HTTPException(
                 status_code=400,
-                detail=f"Estado inválido: {status}. Estados válidos: {[s.value for s in OrderStatus]}",
+                detail=f"Estado inválido: {status}. Estados válidos: {valid_statuses}",
             )
 
         # Get and update order
@@ -294,8 +305,8 @@ async def update_order_status(
                 status_code=404, detail=f"Orden con ID {order_id} no encontrada"
             )
 
-        old_status = order.status.value
-        order.status = new_status
+        old_status = order.status
+        order.status = status
 
         return {
             "message": "Estado de orden actualizado exitosamente",
@@ -395,11 +406,9 @@ async def get_sales_status(
 
         # Calculate statistics
         total_sales = sum(float(order.total_amount) for order in orders)
-        pending_orders = len(
-            [order for order in orders if order.status == OrderStatus.PENDING]
-        )
+        pending_orders = len([order for order in orders if order.status == "Pendiente"])
         confirmed_orders = len(
-            [order for order in orders if order.status == OrderStatus.CONFIRMED]
+            [order for order in orders if order.status == "Confirmada"]
         )
 
         return {

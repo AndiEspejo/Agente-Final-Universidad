@@ -29,15 +29,15 @@ interface CreateProductModalProps {
 }
 
 const CATEGORIES = {
-  Electrónicos: 'Electronics',
-  Muebles: 'Furniture',
-  Electrodomésticos: 'Appliances',
-  Ropa: 'Clothing',
-  Libros: 'Books',
-  Deportes: 'Sports',
-  Automóviles: 'Automotive',
-  Alimentos: 'Food',
-  Otros: 'Other',
+  Electrónicos: 'Electrónicos',
+  Muebles: 'Muebles',
+  Electrodomésticos: 'Electrodomésticos',
+  Ropa: 'Ropa',
+  Libros: 'Libros',
+  Deportes: 'Deportes',
+  Automóviles: 'Automóviles',
+  Alimentos: 'Alimentos',
+  Otros: 'Otros',
 };
 
 const CreateProductModal: React.FC<CreateProductModalProps> = ({
@@ -406,14 +406,14 @@ const CreateProductModal: React.FC<CreateProductModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className='flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50'>
+        <div className='flex items-center justify-between p-6 border-t border-gray-200 bg-blue-50'>
           <div className='text-sm text-gray-600'>
             * Campos obligatorios: Nombre y Cantidad
           </div>
           <div className='flex space-x-3'>
             <button
               onClick={handleClose}
-              className='px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors'
+              className='px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-blue-50 transition-colors'
               disabled={submitting}
             >
               Cancelar

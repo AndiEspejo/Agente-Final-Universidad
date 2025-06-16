@@ -217,7 +217,7 @@ const EditInventoryModal: React.FC<EditInventoryModalProps> = ({
       case 'bajo':
         return 'text-yellow-600 bg-yellow-50';
       case 'agotado':
-        return 'text-gray-600 bg-gray-50';
+        return 'text-red-600 bg-red-50';
       default:
         return 'text-green-600 bg-green-50';
     }
@@ -281,7 +281,7 @@ const EditInventoryModal: React.FC<EditInventoryModalProps> = ({
                       className={`p-3 rounded-lg border cursor-pointer transition-colors ${
                         selectedProduct?.id === product.id
                           ? 'border-purple-500 bg-purple-50'
-                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                          : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'
                       }`}
                     >
                       <div className='flex items-center justify-between'>
@@ -444,7 +444,7 @@ const EditInventoryModal: React.FC<EditInventoryModalProps> = ({
                   </button>
                   <button
                     onClick={handleClose}
-                    className='px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50'
+                    className='px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-blue-50'
                   >
                     Cancelar
                   </button>

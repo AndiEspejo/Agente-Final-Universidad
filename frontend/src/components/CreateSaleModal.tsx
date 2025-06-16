@@ -1,14 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import {
-  X,
-  Plus,
-  Minus,
-  ShoppingCart,
-  Package,
-  AlertTriangle,
-} from 'lucide-react';
+import { X, ShoppingCart, AlertTriangle, Loader2 } from 'lucide-react';
 import Cookies from 'js-cookie';
 
 interface Product {
@@ -29,6 +22,7 @@ interface CartItem {
   name: string;
   price: number;
   subtotal: number;
+  stock_quantity: number;
 }
 
 interface CreateSaleModalProps {
@@ -117,6 +111,7 @@ const CreateSaleModal: React.FC<CreateSaleModalProps> = ({
         name: product.name,
         price: product.price,
         subtotal: product.price,
+        stock_quantity: product.stock_quantity,
       };
       setCart([...cart, newItem]);
     }
@@ -228,29 +223,6 @@ const CreateSaleModal: React.FC<CreateSaleModalProps> = ({
     }
   };
 
-  const getStockStatusColor = (status: string) => {
-    switch (status) {
-      case 'crítico':
-        return 'text-red-600 bg-red-50';
-      case 'bajo':
-        return 'text-yellow-600 bg-yellow-50';
-      case 'agotado':
-        return 'text-gray-600 bg-gray-50';
-      default:
-        return 'text-green-600 bg-green-50';
-    }
-  };
-
-  const getStockStatusIcon = (status: string) => {
-    switch (status) {
-      case 'crítico':
-      case 'agotado':
-        return <AlertTriangle className='w-4 h-4' />;
-      default:
-        return <Package className='w-4 h-4' />;
-    }
-  };
-
   if (!isOpen) return null;
 
   return (
@@ -258,13 +230,13 @@ const CreateSaleModal: React.FC<CreateSaleModalProps> = ({
       <div className='bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden'>
         {/* Header */}
         <div className='flex items-center justify-between p-6 border-b'>
-          <h2 className='text-2xl font-bold text-gray-900 flex items-center gap-2'>
+          <h2 className='text-2xl font-bold text-slate-900 flex items-center gap-2'>
             <ShoppingCart className='w-6 h-6 text-blue-600' />
             Crear Nueva Venta
           </h2>
           <button
             onClick={onClose}
-            className='text-gray-400 hover:text-gray-600 transition-colors'
+            className='text-slate-600 hover:text-slate-800 transition-colors'
           >
             <X className='w-6 h-6' />
           </button>
@@ -274,13 +246,16 @@ const CreateSaleModal: React.FC<CreateSaleModalProps> = ({
         <div className='flex h-[calc(90vh-140px)]'>
           {/* Products List */}
           <div className='flex-1 p-6 overflow-y-auto border-r'>
-            <h3 className='text-lg font-semibold mb-4'>
+            <h3 className='text-lg font-semibold mb-4 text-slate-900'>
               Productos Disponibles
             </h3>
 
             {loading ? (
               <div className='flex items-center justify-center py-12'>
-                <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600'></div>
+                <Loader2 className='h-8 w-8 animate-spin text-blue-600' />
+                <span className='ml-2 text-slate-700'>
+                  Cargando productos...
+                </span>
               </div>
             ) : (
               <div className='space-y-3'>
@@ -289,35 +264,37 @@ const CreateSaleModal: React.FC<CreateSaleModalProps> = ({
                     key={product.id || product.sku || `product-${index}`}
                     className={`p-4 border rounded-lg ${
                       product.available_for_sale
-                        ? 'bg-white hover:bg-gray-50'
-                        : 'bg-gray-50'
+                        ? 'bg-white hover:bg-blue-50'
+                        : 'bg-red-50 opacity-60'
                     }`}
                   >
                     <div className='flex items-center justify-between'>
                       <div className='flex-1'>
                         <div className='flex items-center gap-2 mb-1'>
-                          <h4 className='font-semibold text-gray-900'>
+                          <h4 className='font-semibold text-slate-900'>
                             {product.name}
                           </h4>
-                          <span className='text-sm text-gray-500'>
+                          <span className='text-sm text-slate-700'>
                             ({product.sku})
                           </span>
                         </div>
-                        <div className='flex items-center gap-4 text-sm text-gray-600'>
+                        <div className='flex items-center gap-4 text-sm text-slate-700'>
                           <span className='font-medium'>
                             ${product.price.toFixed(2)}
                           </span>
                           <span>{product.category}</span>
                           <span>{product.location}</span>
                         </div>
-                        <div
-                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs ${getStockStatusColor(
-                            product.stock_status
-                          )}`}
-                        >
-                          {getStockStatusIcon(product.stock_status)}
-                          Stock: {product.stock_quantity} (
-                          {product.stock_status})
+                        <div className='flex items-center gap-4 text-sm text-slate-700'>
+                          <span>Stock: {product.stock_quantity}</span>
+                          {product.stock_quantity <= 5 && (
+                            <span className='text-red-600 font-medium flex items-center gap-1'>
+                              <AlertTriangle className='h-4 w-4' />
+                              {product.stock_quantity === 1
+                                ? 'Stock crítico'
+                                : 'Stock bajo'}
+                            </span>
+                          )}
                         </div>
                       </div>
 
@@ -327,10 +304,10 @@ const CreateSaleModal: React.FC<CreateSaleModalProps> = ({
                         className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                           product.available_for_sale
                             ? 'bg-blue-600 text-white hover:bg-blue-700'
-                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            : 'bg-red-200 text-red-600 cursor-not-allowed'
                         }`}
                       >
-                        <Plus className='w-4 h-4' />
+                        {product.available_for_sale ? '+' : 'Sin Stock'}
                       </button>
                     </div>
                   </div>
@@ -340,32 +317,34 @@ const CreateSaleModal: React.FC<CreateSaleModalProps> = ({
           </div>
 
           {/* Cart */}
-          <div className='w-96 p-6 bg-gray-50'>
-            <h3 className='text-lg font-semibold mb-4'>Carrito de Compras</h3>
+          <div className='w-96 p-6 bg-blue-50'>
+            <h3 className='text-lg font-semibold mb-4 text-slate-900'>
+              Carrito de Compras
+            </h3>
 
             {/* Customer and Payment */}
             <div className='space-y-4 mb-6'>
               <div>
-                <label className='block text-sm font-medium text-gray-700 mb-1'>
+                <label className='block text-sm font-medium text-slate-800 mb-1'>
                   Cliente ID
                 </label>
                 <input
                   type='number'
                   value={customerId}
                   onChange={(e) => setCustomerId(parseInt(e.target.value) || 1)}
-                  className='w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500'
+                  className='w-full px-3 py-2 border border-gray-300 rounded-md text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500'
                   min='1'
                 />
               </div>
 
               <div>
-                <label className='block text-sm font-medium text-gray-700 mb-1'>
+                <label className='block text-sm font-medium text-slate-800 mb-1'>
                   Método de Pago
                 </label>
                 <select
                   value={paymentMethod}
                   onChange={(e) => setPaymentMethod(e.target.value)}
-                  className='w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500'
+                  className='w-full px-3 py-2 border border-gray-300 rounded-md text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500'
                 >
                   <option value='credit_card'>Tarjeta de Crédito</option>
                   <option value='debit_card'>Tarjeta de Débito</option>
@@ -378,7 +357,7 @@ const CreateSaleModal: React.FC<CreateSaleModalProps> = ({
             {/* Cart Items */}
             <div className='space-y-3 mb-6'>
               {cart.length === 0 ? (
-                <p className='text-gray-500 text-center py-8'>Carrito vacío</p>
+                <p className='text-slate-600 text-center py-8'>Carrito vacío</p>
               ) : (
                 cart.map((item, index) => (
                   <div
@@ -386,7 +365,7 @@ const CreateSaleModal: React.FC<CreateSaleModalProps> = ({
                     className='bg-white p-3 rounded-lg border'
                   >
                     <div className='flex items-center justify-between mb-2'>
-                      <h4 className='font-medium text-gray-900 text-sm'>
+                      <h4 className='font-medium text-slate-900 text-sm'>
                         {item.name}
                       </h4>
                       <button
@@ -403,23 +382,23 @@ const CreateSaleModal: React.FC<CreateSaleModalProps> = ({
                           onClick={() =>
                             updateQuantity(item.product_id, item.quantity - 1)
                           }
-                          className='w-6 h-6 flex items-center justify-center bg-gray-200 rounded text-gray-600 hover:bg-gray-300'
+                          className='w-6 h-6 flex items-center justify-center bg-gray-200 rounded text-slate-700 hover:bg-gray-300'
                         >
-                          <Minus className='w-3 h-3' />
+                          -
                         </button>
-                        <span className='w-8 text-center font-medium'>
+                        <span className='w-8 text-center font-medium text-slate-900'>
                           {item.quantity}
                         </span>
                         <button
                           onClick={() =>
                             updateQuantity(item.product_id, item.quantity + 1)
                           }
-                          className='w-6 h-6 flex items-center justify-center bg-gray-200 rounded text-gray-600 hover:bg-gray-300'
+                          className='w-6 h-6 flex items-center justify-center bg-gray-200 rounded text-slate-700 hover:bg-gray-300'
                         >
-                          <Plus className='w-3 h-3' />
+                          +
                         </button>
                       </div>
-                      <span className='font-medium'>
+                      <span className='font-medium text-slate-900'>
                         ${item.subtotal.toFixed(2)}
                       </span>
                     </div>
@@ -431,8 +410,10 @@ const CreateSaleModal: React.FC<CreateSaleModalProps> = ({
             {/* Total */}
             <div className='border-t pt-4 mb-6'>
               <div className='flex justify-between items-center text-lg font-bold'>
-                <span>Total:</span>
-                <span>${getTotalAmount().toFixed(2)}</span>
+                <span className='text-slate-900'>Total:</span>
+                <span className='text-slate-900'>
+                  ${getTotalAmount().toFixed(2)}
+                </span>
               </div>
             </div>
 
@@ -450,12 +431,19 @@ const CreateSaleModal: React.FC<CreateSaleModalProps> = ({
                 disabled={cart.length === 0 || submitting}
                 className='w-full bg-green-600 text-white py-3 px-4 rounded-md font-medium hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors'
               >
-                {submitting ? 'Creando Venta...' : 'Crear Venta'}
+                {submitting ? (
+                  <div className='flex items-center justify-center gap-2'>
+                    <Loader2 className='h-4 w-4 animate-spin' />
+                    Creando...
+                  </div>
+                ) : (
+                  'Crear Venta'
+                )}
               </button>
 
               <button
                 onClick={onClose}
-                className='w-full bg-gray-200 text-gray-800 py-3 px-4 rounded-md font-medium hover:bg-gray-300 transition-colors'
+                className='w-full bg-red-500 text-white py-3 px-4 rounded-md font-medium hover:bg-red-600 transition-colors'
               >
                 Cancelar
               </button>

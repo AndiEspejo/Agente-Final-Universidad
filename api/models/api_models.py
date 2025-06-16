@@ -18,6 +18,9 @@ class ChatResponse(BaseModel):
     charts: Optional[List[Dict[str, Any]]] = Field(
         default=None, description="Generated charts"
     )
+    order: Optional[Dict[str, Any]] = Field(
+        default=None, description="Order information"
+    )
     workflow_id: Optional[str] = Field(
         default=None, description="Workflow execution ID"
     )
@@ -71,7 +74,9 @@ class ProductEditRequest(BaseModel):
 class StockUpdateRequest(BaseModel):
     product_id: int = Field(..., description="Product ID to update")
     quantity: int = Field(..., description="New quantity")
-    location: str = Field(default="WAREHOUSE_A", description="Inventory location")
+    location: str = Field(
+        default="Almacén Principal", description="Ubicación de inventario"
+    )
 
 
 class EmailReportRequest(BaseModel):

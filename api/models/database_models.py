@@ -2,13 +2,10 @@
 Database models for the Sales/Inventory System using SQLAlchemy.
 """
 
-import enum
-
 from sqlalchemy import (
     Boolean,
     Column,
     DateTime,
-    Enum,
     Float,
     ForeignKey,
     Integer,
@@ -19,26 +16,6 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from database import Base
-
-
-class InventoryLocation(str, enum.Enum):
-    """Inventory location enum."""
-
-    WAREHOUSE_A = "WAREHOUSE_A"
-    WAREHOUSE_B = "WAREHOUSE_B"
-    STORE_FRONT = "STORE_FRONT"
-    SUPPLIER = "SUPPLIER"
-
-
-class OrderStatus(str, enum.Enum):
-    """Order status enum."""
-
-    PENDING = "pending"
-    CONFIRMED = "confirmed"
-    PROCESSING = "processing"
-    SHIPPED = "shipped"
-    DELIVERED = "delivered"
-    CANCELLED = "cancelled"
 
 
 class User(Base):
@@ -89,9 +66,7 @@ class InventoryItem(Base):
     quantity = Column(Integer, nullable=False, default=0)
     min_threshold = Column(Integer, nullable=False, default=10)
     max_threshold = Column(Integer, nullable=False, default=100)
-    location = Column(
-        Enum(InventoryLocation), nullable=False, default=InventoryLocation.WAREHOUSE_A
-    )
+    location = Column(String(100), nullable=False, default="Almacén Principal")
     last_updated = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
@@ -138,7 +113,7 @@ class Order(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     customer_id = Column(Integer, ForeignKey("customers.id"), nullable=False)
-    status = Column(Enum(OrderStatus), nullable=False, default=OrderStatus.PENDING)
+    status = Column(String(50), nullable=False, default="Pendiente")
     payment_method = Column(String(50), nullable=False, default="credit_card")
     total_amount = Column(Float, nullable=False, default=0.0)
     notes = Column(Text, nullable=True)

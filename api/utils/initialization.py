@@ -24,11 +24,11 @@ def create_sample_products(count: int = 5) -> List[Product]:
     products = []
 
     sample_data = [
-        {"name": "Laptop", "category": "Electronics", "price": 999.99},
-        {"name": "Office Chair", "category": "Furniture", "price": 199.99},
-        {"name": "Coffee Maker", "category": "Appliances", "price": 89.99},
-        {"name": "Notebook", "category": "Other", "price": 4.99},
-        {"name": "Wireless Mouse", "category": "Electronics", "price": 29.99},
+        {"name": "Laptop", "category": "Electrónicos", "price": 999.99},
+        {"name": "Silla de Oficina", "category": "Muebles", "price": 199.99},
+        {"name": "Cafetera", "category": "Electrodomésticos", "price": 89.99},
+        {"name": "Cuaderno", "category": "Otros", "price": 4.99},
+        {"name": "Mouse Inalámbrico", "category": "Electrónicos", "price": 29.99},
     ]
 
     for i in range(min(count, len(sample_data))):

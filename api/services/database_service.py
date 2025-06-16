@@ -13,7 +13,6 @@ from models.api_models import ProductCreateRequest, ProductEditRequest
 from models.database_models import (
     Customer,
     InventoryItem,
-    InventoryLocation,
     Order,
     OrderItem,
     Product,
@@ -48,7 +47,7 @@ class DatabaseService:
             min_threshold=product_data.minimum_stock
             or max(5, product_data.quantity // 5),
             max_threshold=product_data.maximum_stock or product_data.quantity * 2,
-            location=InventoryLocation.WAREHOUSE_A,
+            location="Almacén Principal",
         )
 
         self.session.add(inventory_item)
@@ -139,7 +138,7 @@ class DatabaseService:
                     "category": product.category,
                     "stock_quantity": inventory.quantity,
                     "stock_status": inventory.status,
-                    "location": inventory.location.value,
+                    "location": inventory.location,
                     "available_for_sale": inventory.quantity > 0,
                 }
             )
@@ -324,7 +323,7 @@ class DatabaseService:
         return {
             "id": order.id,
             "customer_id": order.customer_id,
-            "status": order.status.value,
+            "status": order.status,
             "payment_method": order.payment_method,
             "total_amount": float(order.total_amount),
             "notes": order.notes,
