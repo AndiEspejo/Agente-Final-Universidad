@@ -49,6 +49,7 @@ app.add_middleware(
         "http://127.0.0.1:3000",
         "http://localhost:3001",
         "http://127.0.0.1:3001",
+        "https://frontend-fb7fbapi3-jefferson-espejos-projects.vercel.app",
         "https://*.vercel.app",
         "https://*.render.com",
         "https://*.railway.app",
