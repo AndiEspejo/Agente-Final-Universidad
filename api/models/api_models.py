@@ -46,6 +46,13 @@ class ProductCreateRequest(BaseModel):
     category: Optional[str] = Field(default="Other", description="Product category")
     description: Optional[str] = Field(default="", description="Product description")
     sku: Optional[str] = Field(default=None, description="Product SKU")
+    unit_cost: Optional[float] = Field(default=None, description="Product unit cost")
+    minimum_stock: Optional[int] = Field(
+        default=None, description="Minimum stock threshold"
+    )
+    maximum_stock: Optional[int] = Field(
+        default=None, description="Maximum stock threshold"
+    )
 
 
 class ProductEditRequest(BaseModel):
