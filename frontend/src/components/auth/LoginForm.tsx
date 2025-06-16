@@ -84,7 +84,7 @@ export default function LoginForm({ onToggleMode, onSuccess }: LoginFormProps) {
           <div>
             <label
               htmlFor='password'
-              className='block text-sm font-medium text-gray-700 mb-2'
+              className='block text-sm font-medium text-slate-900 mb-2'
             >
               Contraseña
             </label>
