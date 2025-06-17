@@ -47,7 +47,7 @@ const CreateSaleModal: React.FC<CreateSaleModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [customerId, setCustomerId] = useState(1);
+  const [customerName, setCustomerName] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('credit_card');
 
   // Auto-hide error messages after 4 seconds
@@ -66,6 +66,7 @@ const CreateSaleModal: React.FC<CreateSaleModalProps> = ({
     if (isOpen) {
       loadProducts();
       setCart([]);
+      setCustomerName('');
       setError(null);
     }
   }, [isOpen]);
@@ -178,6 +179,11 @@ const CreateSaleModal: React.FC<CreateSaleModalProps> = ({
       return;
     }
 
+    if (!customerName.trim()) {
+      setError('Ingresa el nombre del cliente');
+      return;
+    }
+
     setSubmitting(true);
     setError(null);
 
@@ -185,7 +191,7 @@ const CreateSaleModal: React.FC<CreateSaleModalProps> = ({
       const token = Cookies.get('auth_token');
 
       const orderData = {
-        customer_id: customerId,
+        customer_name: customerName,
         items: cart.map((item) => ({
           product_id: item.product_id,
           quantity: item.quantity,
@@ -353,14 +359,14 @@ const CreateSaleModal: React.FC<CreateSaleModalProps> = ({
             <div className='space-y-4 mb-6'>
               <div>
                 <label className='block text-sm font-medium text-white mb-1'>
-                  Cliente ID
+                  Nombre del Cliente
                 </label>
                 <input
-                  type='number'
-                  value={customerId}
-                  onChange={(e) => setCustomerId(parseInt(e.target.value) || 1)}
+                  type='text'
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
                   className='w-full px-3 py-2 bg-white/10 border border-white/20 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50'
-                  min='1'
+                  placeholder='Ej: Juan Pérez'
                 />
               </div>
 

@@ -236,7 +236,7 @@ class SalesAgent:
             order = await self.db_service.create_order(
                 customer_id=customer_id,
                 items=resolved_items,
-                payment_method=sale_data.get("payment_method", "credit_card"),
+                payment_method=sale_data.get("payment_method", "tarjeta_debito"),
             )
 
             # Build success response
@@ -472,10 +472,10 @@ class SalesAgent:
                 if "efectivo" in payment_method or "cash" in payment_method:
                     sale_data["payment_method"] = "cash"
                 elif "tarjeta" in payment_method or "credit" in payment_method:
-                    sale_data["payment_method"] = "credit_card"
-                else:
-                    sale_data["payment_method"] = "credit_card"
+                    sale_data["payment_method"] = "tarjeta_debito"
                 break
+        else:
+            sale_data["payment_method"] = "tarjeta_debito"
 
         return (
             sale_data

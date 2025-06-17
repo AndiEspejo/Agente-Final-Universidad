@@ -3,6 +3,7 @@ Inventory router for product and stock management - Database Version.
 """
 
 import logging
+import uuid
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -36,7 +37,8 @@ async def add_inventory_product(
         # Check for duplicate names and SKUs
         existing_products = await db_service.get_all_products()
         proposed_sku = (
-            product_data.sku or f"SKU-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+            product_data.sku
+            or f"SKU-{datetime.now().strftime('%Y%m%d%H%M%S')}-{str(uuid.uuid4())[:8]}"
         )
 
         for existing_product in existing_products:

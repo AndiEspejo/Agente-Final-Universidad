@@ -30,12 +30,12 @@ async def create_order_with_inventory_sync(
 
     Expected format:
     {
-        "customer_id": 1,
+        "customer_name": "Juan Pérez",
         "items": [
             {"product_id": 1, "quantity": 2},
             {"product_id": 3, "quantity": 1}
         ],
-        "payment_method": "credit_card"
+        "payment_method": "tarjeta_debito"
     }
     """
     try:
@@ -45,14 +45,25 @@ async def create_order_with_inventory_sync(
 
         db_service = DatabaseService(session)
 
-        # Validate customer exists (create default if not)
-        customer = await db_service.get_customer_by_id(order_data.customer_id)
+        # Find or create customer by name
+        all_customers = await db_service.get_all_customers()
+        customer = None
+
+        # Try to find existing customer by name (case insensitive)
+        for existing_customer in all_customers:
+            if (
+                existing_customer.name.lower().strip()
+                == order_data.customer_name.lower().strip()
+            ):
+                customer = existing_customer
+                break
+
+        # Create customer if not found
         if not customer:
-            # Create default customer
             customer = await db_service.create_customer(
-                name="Cliente General", email="general@example.com"
+                name=order_data.customer_name.strip(),
+                email=f"{order_data.customer_name.lower().replace(' ', '.')}@example.com",
             )
-            order_data.customer_id = customer.id
 
         # Validate inventory availability and prepare order items
         items_data = order_data.items
@@ -115,7 +126,7 @@ async def create_order_with_inventory_sync(
 
         # Create the order with items
         order = await db_service.create_order(
-            customer_id=order_data.customer_id,
+            customer_id=customer.id,
             items=order_items_data,
             payment_method=order_data.payment_method,
         )
@@ -132,7 +143,7 @@ async def create_order_with_inventory_sync(
 
 **Detalles de la Orden:**
 - **ID de Orden:** {order.id}
-- **Cliente ID:** {order.customer_id}
+- **Cliente:** {customer.name}
 - **Método de Pago:** {order.payment_method}
 - **Total:** ${order.total_amount:.2f}
 - **Estado:** {order.status}
@@ -150,6 +161,7 @@ Se ha actualizado automáticamente el stock de todos los productos vendidos.
             data={
                 "order_id": order.id,
                 "customer_id": order.customer_id,
+                "customer_name": customer.name,
                 "total_amount": float(order.total_amount),
                 "payment_method": order.payment_method,
                 "status": order.status,

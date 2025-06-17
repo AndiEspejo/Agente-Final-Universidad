@@ -1,10 +1,3 @@
-"""
-Chat Orchestrator - Main entry point for processing user messages.
-
-This orchestrator classifies user intents and delegates to specialized agents
-providing a clean, efficient multi-agent architecture.
-"""
-
 import logging
 from datetime import datetime
 from typing import Dict, Any
@@ -22,7 +15,6 @@ from services.database_service import DatabaseService
 
 logger = logging.getLogger(__name__)
 
-# Global cache for analysis data (simple in-memory cache)
 _analysis_cache = {
     "last_analysis_type": None,
     "last_analysis_data": None,
@@ -31,17 +23,11 @@ _analysis_cache = {
 
 
 class ChatOrchestrator:
-    """
-    Main orchestrator for processing chat messages and delegating to specialized agents.
-
-    Provides efficient multi-agent architecture with better separation of concerns.
-    """
 
     def __init__(self, session: AsyncSession):
         self.session = session
         self.db_service = DatabaseService(session)
 
-        # Initialize classifier and agents
         self.intent_classifier = IntentClassifier()
         self.product_agent = ProductAgent(session)
         self.sales_agent = SalesAgent(session)
@@ -51,19 +37,9 @@ class ChatOrchestrator:
         logger.info("🎼 ChatOrchestrator initialized with specialized agents")
 
     async def process_message(self, message: str) -> ChatResponse:
-        """
-        Process incoming chat message by classifying intent and delegating to appropriate agent.
-
-        Args:
-            message: User's natural language message
-
-        Returns:
-            ChatResponse with the agent's response
-        """
         try:
             logger.info(f"🎼 ORCHESTRATOR: Processing message: {message[:100]}...")
 
-            # Classify the user's intent
             intent_result = self.intent_classifier.classify_intent(message)
             intent_type = intent_result["intent"]
             confidence = intent_result["confidence"]
@@ -73,7 +49,6 @@ class ChatOrchestrator:
                 f"🔍 Classified intent: {intent_type.value} (confidence: {confidence:.2f})"
             )
 
-            # Delegate to appropriate agent based on intent
             if intent_type == IntentType.ADD_PRODUCT:
                 return await self.product_agent.handle_add_product(
                     parameters["message"]
@@ -116,10 +91,10 @@ class ChatOrchestrator:
                 + datetime.now().strftime("%Y%m%d-%H%M%S"),
             )
 
-    # === TEMPORARY HANDLERS (to be moved to specialized agents) ===
-
     async def _handle_list_inventory(self) -> ChatResponse:
         """Handle inventory listing - delegated to InventoryAgent in future."""
+        # === TEMPORARY HANDLERS (to be moved to specialized agents) ===
+
         try:
             logger.info("📋 LIST_INVENTORY: Starting inventory listing")
 
@@ -188,16 +163,13 @@ class ChatOrchestrator:
 - **Productos con stock bajo:** {summary["low_stock_items"]}
 - **Valor total estimado:** ${sum(p["price"] * p["stock_quantity"] for p in products_with_stock):.2f}"""
 
-            # Transform summary to match frontend expectations
             frontend_summary = {
                 "total_items": summary.get("total_products", 0),
-                "critical_items_count": len(
-                    critical_items
-                ),  # Use actual critical count
-                "low_stock_items_count": len(low_items),  # Use actual low stock count
-                "recommendations_count": 0,  # Default for listing
-                "charts_generated": 0,  # Default for listing
-                "ai_interactions": 0,  # Default for listing
+                "critical_items_count": len(critical_items),
+                "low_stock_items_count": len(low_items),
+                "recommendations_count": 0,
+                "charts_generated": 0,
+                "ai_interactions": 0,
                 "tools_used": ["list_inventory"],
             }
 
@@ -244,11 +216,9 @@ class ChatOrchestrator:
                     ),
                 )
 
-            # Get analytics data for summary
             analytics_data = await self.db_service.get_analytics_data()
             summary = analytics_data["summary"]
 
-            # Format data for email cache with proper structure
             email_data = {
                 "analysis_type": "inventory",
                 "summary": {
@@ -265,7 +235,6 @@ class ChatOrchestrator:
                 "top_products": result["analysis"]["top_products"],
             }
 
-            # Save formatted data to cache
             self._save_analysis_to_cache("inventory", email_data)
 
             return ChatResponse(
@@ -317,8 +286,6 @@ _"Enviar reporte de inventario a gerente@empresa.com"_
             response=help_text,
             workflow_id="help-" + datetime.now().strftime("%Y%m%d-%H%M%S"),
         )
-
-    # === CACHE MANAGEMENT (shared functionality) ===
 
     def _save_analysis_to_cache(self, analysis_type: str, analysis_data: dict):
         """Save analysis data to global cache."""

@@ -37,9 +37,9 @@ class AnalysisRequest(BaseModel):
 
 
 class SalesOrderRequest(BaseModel):
-    customer_id: int = Field(..., description="Customer ID")
+    customer_name: str = Field(..., description="Customer name")
     items: List[Dict[str, Any]] = Field(..., description="Order items")
-    payment_method: str = Field(default="credit_card", description="Payment method")
+    payment_method: str = Field(default="tarjeta_debito", description="Payment method")
 
 
 class ProductCreateRequest(BaseModel):

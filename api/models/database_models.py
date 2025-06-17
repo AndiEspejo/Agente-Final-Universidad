@@ -113,8 +113,8 @@ class Order(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     customer_id = Column(Integer, ForeignKey("customers.id"), nullable=False)
-    status = Column(String(50), nullable=False, default="Pendiente")
-    payment_method = Column(String(50), nullable=False, default="credit_card")
+    status = Column(String(50), nullable=False, default="Confirmada")
+    payment_method = Column(String(50), nullable=False, default="tarjeta_debito")
     total_amount = Column(Float, nullable=False, default=0.0)
     notes = Column(Text, nullable=True)
     order_date = Column(DateTime(timezone=True), server_default=func.now())

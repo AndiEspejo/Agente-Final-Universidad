@@ -2,6 +2,7 @@
 Database service layer for CRUD operations.
 """
 
+import uuid
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
@@ -33,7 +34,8 @@ class DatabaseService:
             description=product_data.description or "",
             category=product_data.category or "Other",
             price=float(product_data.price),
-            sku=product_data.sku or f"SKU-{datetime.now().strftime('%Y%m%d%H%M%S')}",
+            sku=product_data.sku
+            or f"SKU-{datetime.now().strftime('%Y%m%d%H%M%S')}-{str(uuid.uuid4())[:8]}",
             unit_cost=float(product_data.unit_cost) if product_data.unit_cost else None,
         )
 
@@ -227,7 +229,7 @@ class DatabaseService:
         self,
         customer_id: int,
         items: List[Dict[str, Any]],
-        payment_method: str = "credit_card",
+        payment_method: str = "tarjeta_debito",
     ) -> Order:
         """Create a new order with items."""
         order = Order(
