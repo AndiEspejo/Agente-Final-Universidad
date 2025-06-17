@@ -10,6 +10,7 @@ import {
   AlertCircle,
   Check,
   Loader2,
+  Trash2,
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 
@@ -54,6 +55,8 @@ const EditInventoryModal: React.FC<EditInventoryModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   // Form fields
   const [editForm, setEditForm] = useState({
@@ -85,6 +88,7 @@ const EditInventoryModal: React.FC<EditInventoryModalProps> = ({
         minimum_stock: '',
         maximum_stock: '',
       });
+      setConfirmDelete(false);
     }
   }, [selectedProduct]);
 
@@ -208,6 +212,51 @@ const EditInventoryModal: React.FC<EditInventoryModalProps> = ({
     });
     setError(null);
     onClose();
+  };
+
+  const handleDelete = async () => {
+    if (!selectedProduct) return;
+
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      return;
+    }
+
+    setDeleting(true);
+    setError(null);
+
+    try {
+      const token = Cookies.get('auth_token');
+      const API_BASE_URL =
+        process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+      const response = await fetch(
+        `${API_BASE_URL}/inventory/product/${selectedProduct.id}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Error eliminando producto');
+      }
+
+      const result = await response.json();
+      onProductEdited(result.message);
+
+      // Remove the product from the list
+      setProducts(products.filter((p) => p.id !== selectedProduct.id));
+      setSelectedProduct(null);
+      setConfirmDelete(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error desconocido');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const getStockStatusColor = (status: string) => {
@@ -458,6 +507,36 @@ const EditInventoryModal: React.FC<EditInventoryModalProps> = ({
                   >
                     Cancelar
                   </button>
+                </div>
+
+                <div className='pt-4 border-t border-white/10 mt-6'>
+                  <button
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className={`w-full py-3 px-4 rounded-xl font-medium transition-all duration-300 shadow-lg flex items-center justify-center gap-2 ${
+                      deleting
+                        ? 'bg-gray-500 text-white/40 cursor-not-allowed'
+                        : confirmDelete
+                        ? 'bg-red-600 text-white hover:bg-red-700'
+                        : 'bg-white/10 border border-red-500/30 text-red-400 hover:bg-red-500/20'
+                    }`}
+                  >
+                    {deleting ? (
+                      <Loader2 className='h-4 w-4 animate-spin' />
+                    ) : (
+                      <Trash2 className='h-4 w-4' />
+                    )}
+                    {deleting
+                      ? 'Eliminando...'
+                      : confirmDelete
+                      ? 'Confirmar Eliminación'
+                      : 'Eliminar Producto'}
+                  </button>
+                  {confirmDelete && (
+                    <p className='text-red-300 text-xs mt-2 text-center'>
+                      Esta acción no se puede deshacer
+                    </p>
+                  )}
                 </div>
               </div>
             ) : (
