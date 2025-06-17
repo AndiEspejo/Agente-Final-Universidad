@@ -20,11 +20,11 @@ export default function MessageItem({ message }: MessageItemProps) {
     <div className={cn('flex gap-3', isUser ? 'justify-end' : 'justify-start')}>
       {!isUser && (
         <div className='flex-shrink-0'>
-          <div className='w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center'>
+          <div className='w-8 h-8 rounded-full bg-purple-500/20 backdrop-blur-sm border border-purple-400/30 flex items-center justify-center'>
             {isLoading ? (
-              <Loader2 className='h-4 w-4 text-blue-600 animate-spin' />
+              <Loader2 className='h-4 w-4 text-purple-400 animate-spin' />
             ) : (
-              <Bot className='h-4 w-4 text-blue-600' />
+              <Bot className='h-4 w-4 text-purple-400' />
             )}
           </div>
         </div>
@@ -32,30 +32,41 @@ export default function MessageItem({ message }: MessageItemProps) {
 
       <div
         className={cn(
-          'max-w-[80%] rounded-lg px-4 py-3',
-          isUser ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-900'
+          'max-w-[80%] rounded-xl px-4 py-3 backdrop-blur-xl border shadow-lg',
+          isUser
+            ? 'bg-blue-500/90 text-white border-blue-400/30'
+            : 'bg-slate-900/90 text-white border-white/20 relative'
         )}
       >
+        {!isUser && (
+          <div className='absolute inset-0 rounded-xl bg-gradient-to-br from-slate-800/50 via-purple-900/30 to-slate-800/50 pointer-events-none' />
+        )}
         {/* Message Content */}
-        <div className='space-y-2'>
+        <div className='space-y-2 relative z-10'>
           {isUser ? (
             <p className='whitespace-pre-wrap'>{message.content}</p>
           ) : (
-            <div className='prose prose-sm max-w-none'>
+            <div className='prose prose-sm max-w-none prose-invert'>
               <ReactMarkdown
                 components={{
                   p: ({ children }) => (
-                    <p className='mb-2 last:mb-0'>{children}</p>
+                    <p className='mb-2 last:mb-0 text-white'>{children}</p>
                   ),
                   ul: ({ children }) => (
-                    <ul className='list-disc list-inside mb-2'>{children}</ul>
+                    <ul className='list-disc list-inside mb-2 text-white'>
+                      {children}
+                    </ul>
                   ),
-                  li: ({ children }) => <li className='mb-1'>{children}</li>,
+                  li: ({ children }) => (
+                    <li className='mb-1 text-white'>{children}</li>
+                  ),
                   strong: ({ children }) => (
-                    <strong className='font-semibold'>{children}</strong>
+                    <strong className='font-semibold text-white'>
+                      {children}
+                    </strong>
                   ),
                   code: ({ children }) => (
-                    <code className='bg-gray-200 px-1 py-0.5 rounded text-sm font-mono'>
+                    <code className='bg-white/20 px-1 py-0.5 rounded text-sm font-mono text-white'>
                       {children}
                     </code>
                   ),
@@ -72,7 +83,7 @@ export default function MessageItem({ message }: MessageItemProps) {
 
         {/* Enhanced Analysis Data - Check for new structure */}
         {message.data && !isUser && Object.keys(message.data).length > 0 && (
-          <div className='mt-4'>
+          <div className='mt-4 relative z-10'>
             {/* Check if it's the new enhanced inventory analysis */}
             {message.data.visualizations ? (
               <AnalysisDisplay analysisData={message.data} />
@@ -89,7 +100,7 @@ export default function MessageItem({ message }: MessageItemProps) {
           Array.isArray(message.charts) &&
           message.charts.length > 0 &&
           !message.data?.visualizations && (
-            <div className='mt-4 space-y-4'>
+            <div className='mt-4 space-y-4 relative z-10'>
               {message.charts.map((chart, index) => {
                 // Convert old chart structure to new visualization structure
                 const visualization = {
@@ -110,8 +121,8 @@ export default function MessageItem({ message }: MessageItemProps) {
         {/* Timestamp and Workflow ID */}
         <div
           className={cn(
-            'mt-2 text-xs opacity-70',
-            isUser ? 'text-blue-100' : 'text-gray-500'
+            'mt-2 text-xs opacity-70 relative z-10',
+            isUser ? 'text-blue-100' : 'text-white/60'
           )}
         >
           <div className='flex items-center justify-between'>
@@ -125,7 +136,7 @@ export default function MessageItem({ message }: MessageItemProps) {
 
       {isUser && (
         <div className='flex-shrink-0'>
-          <div className='w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center'>
+          <div className='w-8 h-8 rounded-full bg-blue-500/80 backdrop-blur-sm border border-blue-400/30 flex items-center justify-center'>
             <User className='h-4 w-4 text-white' />
           </div>
         </div>

@@ -52,8 +52,8 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ analysisData }) => {
 
   if (!data) {
     return (
-      <div className='p-6 bg-gray-50 rounded-lg'>
-        <div className='text-center text-gray-500'>
+      <div className='p-6 bg-white/5 rounded-lg border border-white/20'>
+        <div className='text-center text-white/60'>
           <div className='text-lg font-medium'>
             No hay datos de análisis disponibles
           </div>
@@ -73,70 +73,73 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ analysisData }) => {
   }
 
   const renderAnalysisSummary = () => (
-    <div className='bg-gradient-to-r from-blue-50 to-indigo-100 p-6 rounded-xl border border-blue-200 mb-8'>
-      <div className='flex items-center mb-4'>
-        <span className='text-3xl mr-3'>📦</span>
-        <div>
-          <h2 className='text-2xl font-bold text-gray-900'>
-            Análisis de Inventario Completado
-          </h2>
-          <p className='text-blue-700 font-medium'>
-            Análisis inteligente con IA • {data.summary?.ai_interactions || 0}{' '}
-            interacciones de IA
-          </p>
+    <div className='relative bg-slate-900/90 backdrop-blur-xl p-6 rounded-xl border border-white/20 mb-8'>
+      <div className='absolute inset-0 rounded-xl bg-gradient-to-br from-slate-800/50 via-purple-900/30 to-slate-800/50 pointer-events-none' />
+      <div className='relative z-10'>
+        <div className='flex items-center mb-4'>
+          <span className='text-3xl mr-3'>📦</span>
+          <div>
+            <h2 className='text-2xl font-bold text-white'>
+              Análisis de Inventario Completado
+            </h2>
+            <p className='text-purple-300 font-medium'>
+              Análisis inteligente con IA • {data.summary?.ai_interactions || 0}{' '}
+              interacciones de IA
+            </p>
+          </div>
         </div>
-      </div>
 
-      <div className='grid grid-cols-2 md:grid-cols-4 gap-4 mb-6'>
-        <div className='bg-white p-4 rounded-lg shadow-sm border border-blue-100'>
-          <div className='text-2xl font-bold text-blue-600'>
-            {data.summary?.total_items || 0}
+        <div className='grid grid-cols-2 md:grid-cols-4 gap-4 mb-6'>
+          <div className='bg-white/10 p-4 rounded-lg shadow-sm border border-blue-400/30 backdrop-blur-sm'>
+            <div className='text-2xl font-bold text-blue-400'>
+              {data.summary?.total_items || 0}
+            </div>
+            <div className='text-sm text-white/70'>Total de productos</div>
           </div>
-          <div className='text-sm text-gray-600'>Total de productos</div>
-        </div>
-        <div className='bg-white p-4 rounded-lg shadow-sm border border-red-100'>
-          <div className='text-2xl font-bold text-red-600'>
-            {data.summary?.critical_items_count || 0}
+          <div className='bg-white/10 p-4 rounded-lg shadow-sm border border-red-400/30 backdrop-blur-sm'>
+            <div className='text-2xl font-bold text-red-400'>
+              {data.summary?.critical_items_count || 0}
+            </div>
+            <div className='text-sm text-white/70'>Productos críticos</div>
           </div>
-          <div className='text-sm text-gray-600'>Productos críticos</div>
-        </div>
-        <div className='bg-white p-4 rounded-lg shadow-sm border border-yellow-100'>
-          <div className='text-2xl font-bold text-yellow-600'>
-            {data.summary?.low_stock_items_count || 0}
+          <div className='bg-white/10 p-4 rounded-lg shadow-sm border border-yellow-400/30 backdrop-blur-sm'>
+            <div className='text-2xl font-bold text-yellow-400'>
+              {data.summary?.low_stock_items_count || 0}
+            </div>
+            <div className='text-sm text-white/70'>Stock bajo</div>
           </div>
-          <div className='text-sm text-gray-600'>Stock bajo</div>
-        </div>
-        <div className='bg-white p-4 rounded-lg shadow-sm border border-green-100'>
-          <div className='text-2xl font-bold text-green-600'>
-            {data.summary?.recommendations_count || 0}
+          <div className='bg-white/10 p-4 rounded-lg shadow-sm border border-green-400/30 backdrop-blur-sm'>
+            <div className='text-2xl font-bold text-green-400'>
+              {data.summary?.recommendations_count || 0}
+            </div>
+            <div className='text-sm text-white/70'>Recomendaciones</div>
           </div>
-          <div className='text-sm text-gray-600'>Recomendaciones</div>
         </div>
-      </div>
 
-      {data.ai_analysis?.inventory_insights?.inventory_health_score && (
-        <div className='bg-white p-4 rounded-lg border border-blue-100 mb-4'>
-          <div className='flex items-center justify-between'>
-            <div className='flex items-center'>
-              <span className='text-2xl mr-3'>🏥</span>
-              <div>
-                <div className='font-semibold text-gray-900'>
-                  Salud del Inventario
-                </div>
-                <div className='text-sm text-gray-600'>
-                  Puntuación general del sistema
+        {data.ai_analysis?.inventory_insights?.inventory_health_score && (
+          <div className='bg-white/10 p-4 rounded-lg border border-purple-400/30 mb-4 backdrop-blur-sm'>
+            <div className='flex items-center justify-between'>
+              <div className='flex items-center'>
+                <span className='text-2xl mr-3'>🏥</span>
+                <div>
+                  <div className='font-semibold text-white'>
+                    Salud del Inventario
+                  </div>
+                  <div className='text-sm text-white/70'>
+                    Puntuación general del sistema
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className='text-3xl font-bold text-blue-600'>
-              {data.ai_analysis.inventory_insights.inventory_health_score.toFixed(
-                1
-              )}
-              /10
+              <div className='text-3xl font-bold text-purple-400'>
+                {data.ai_analysis.inventory_insights.inventory_health_score.toFixed(
+                  1
+                )}
+                /10
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 
@@ -146,7 +149,7 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ analysisData }) => {
 
     return (
       <div className='mb-8'>
-        <h3 className='text-xl font-bold text-gray-900 mb-4 flex items-center'>
+        <h3 className='text-xl font-bold text-white mb-4 flex items-center'>
           <span className='mr-2'>🚨</span>
           Alertas Inteligentes
         </h3>
@@ -154,12 +157,12 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ analysisData }) => {
           {alerts.map((alert, index) => (
             <div
               key={index}
-              className={`p-4 rounded-lg border-l-4 ${
+              className={`p-4 rounded-lg border-l-4 backdrop-blur-sm ${
                 alert.priority === 'high'
-                  ? 'bg-red-50 border-red-400'
+                  ? 'bg-red-500/20 border-red-400'
                   : alert.priority === 'medium'
-                  ? 'bg-yellow-50 border-yellow-400'
-                  : 'bg-blue-50 border-blue-400'
+                  ? 'bg-yellow-500/20 border-yellow-400'
+                  : 'bg-blue-500/20 border-blue-400'
               }`}
             >
               <div className='flex items-start justify-between'>
@@ -168,22 +171,22 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ analysisData }) => {
                     <span
                       className={`px-2 py-1 rounded-full text-xs font-semibold ${
                         alert.priority === 'high'
-                          ? 'bg-red-100 text-red-800'
+                          ? 'bg-red-500/30 text-red-300'
                           : alert.priority === 'medium'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-blue-100 text-blue-800'
+                          ? 'bg-yellow-500/30 text-yellow-300'
+                          : 'bg-blue-500/30 text-blue-300'
                       }`}
                     >
                       {alert.priority.toUpperCase()}
                     </span>
-                    <span className='ml-2 text-sm text-gray-600 font-medium'>
+                    <span className='ml-2 text-sm text-white/70 font-medium'>
                       {alert.type.replace(/_/g, ' ').toUpperCase()}
                     </span>
                   </div>
-                  <div className='text-gray-900 font-medium mb-1'>
+                  <div className='text-white font-medium mb-1'>
                     {alert.message}
                   </div>
-                  <div className='text-sm text-gray-600'>
+                  <div className='text-sm text-white/70'>
                     {alert.recommended_action}
                   </div>
                 </div>
@@ -202,16 +205,16 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ analysisData }) => {
 
     return (
       <div className='mb-8'>
-        <h3 className='text-xl font-bold text-gray-900 mb-4 flex items-center'>
+        <h3 className='text-xl font-bold text-white mb-4 flex items-center'>
           <span className='mr-2'>💡</span>
           Recomendaciones Estratégicas
         </h3>
-        <div className='bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-lg border border-green-200'>
+        <div className='bg-gradient-to-r from-green-500/20 to-emerald-500/20 p-6 rounded-lg border border-green-400/30 backdrop-blur-sm'>
           <ul className='space-y-3'>
             {recommendations.map((recommendation: string, index: number) => (
               <li key={index} className='flex items-start'>
-                <span className='text-green-500 mr-3 mt-1'>✓</span>
-                <span className='text-gray-800'>{recommendation}</span>
+                <span className='text-green-400 mr-3 mt-1'>✓</span>
+                <span className='text-white'>{recommendation}</span>
               </li>
             ))}
           </ul>
@@ -226,29 +229,29 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ analysisData }) => {
 
     return (
       <div className='mb-8'>
-        <h3 className='text-xl font-bold text-gray-900 mb-4 flex items-center'>
+        <h3 className='text-xl font-bold text-white mb-4 flex items-center'>
           <span className='mr-2'>🔮</span>
           Predicciones de Demanda
         </h3>
-        <div className='bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-lg border border-purple-200'>
+        <div className='bg-gradient-to-r from-purple-500/20 to-pink-500/20 p-6 rounded-lg border border-purple-400/30 backdrop-blur-sm'>
           <div className='grid gap-4'>
             {predictions.slice(0, 5).map((prediction, index) => (
               <div
                 key={index}
-                className='bg-white p-4 rounded-lg border border-purple-100'
+                className='bg-white/10 p-4 rounded-lg border border-purple-300/30 backdrop-blur-sm'
               >
                 <div className='flex items-center justify-between mb-3'>
-                  <div className='font-semibold text-gray-900'>
+                  <div className='font-semibold text-white'>
                     Producto {prediction.product_id}
                   </div>
                   <div className='flex items-center space-x-2'>
                     <span
                       className={`px-2 py-1 rounded-full text-xs font-semibold ${
                         prediction.confidence_score >= 0.8
-                          ? 'bg-green-100 text-green-800'
+                          ? 'bg-green-500/30 text-green-300'
                           : prediction.confidence_score >= 0.6
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-red-100 text-red-800'
+                          ? 'bg-yellow-500/30 text-yellow-300'
+                          : 'bg-red-500/30 text-red-300'
                       }`}
                     >
                       {(prediction.confidence_score * 100).toFixed(0)}%
@@ -257,10 +260,10 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ analysisData }) => {
                     <span
                       className={`px-2 py-1 rounded-full text-xs font-semibold ${
                         prediction.risk_level === 'high'
-                          ? 'bg-red-100 text-red-800'
+                          ? 'bg-red-500/30 text-red-300'
                           : prediction.risk_level === 'medium'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-green-100 text-green-800'
+                          ? 'bg-yellow-500/30 text-yellow-300'
+                          : 'bg-green-500/30 text-green-300'
                       }`}
                     >
                       Riesgo {prediction.risk_level}
@@ -268,28 +271,30 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ analysisData }) => {
                   </div>
                 </div>
                 <div className='grid grid-cols-3 gap-3 text-sm'>
-                  <div className='text-center p-2 bg-blue-50 rounded border border-blue-100'>
-                    <div className='font-bold text-blue-600'>
+                  <div className='text-center p-2 bg-blue-500/20 rounded border border-blue-400/30'>
+                    <div className='font-bold text-blue-400'>
                       {prediction.predicted_demand_30d}
                     </div>
-                    <div className='text-blue-700'>30 días</div>
+                    <div className='text-blue-300'>30 días</div>
                   </div>
-                  <div className='text-center p-2 bg-indigo-50 rounded border border-indigo-100'>
-                    <div className='font-bold text-indigo-600'>
+                  <div className='text-center p-2 bg-indigo-500/20 rounded border border-indigo-400/30'>
+                    <div className='font-bold text-indigo-400'>
                       {prediction.predicted_demand_60d}
                     </div>
-                    <div className='text-indigo-700'>60 días</div>
+                    <div className='text-indigo-300'>60 días</div>
                   </div>
-                  <div className='text-center p-2 bg-purple-50 rounded border border-purple-100'>
-                    <div className='font-bold text-purple-600'>
+                  <div className='text-center p-2 bg-purple-500/20 rounded border border-purple-400/30'>
+                    <div className='font-bold text-purple-400'>
                       {prediction.predicted_demand_90d}
                     </div>
-                    <div className='text-purple-700'>90 días</div>
+                    <div className='text-purple-300'>90 días</div>
                   </div>
                 </div>
-                <div className='mt-2 text-xs text-gray-600'>
+                <div className='mt-2 text-xs text-white/70'>
                   Tendencia:{' '}
-                  <span className='font-medium'>{prediction.trend}</span>
+                  <span className='font-medium text-white'>
+                    {prediction.trend}
+                  </span>
                 </div>
               </div>
             ))}
@@ -305,7 +310,7 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ analysisData }) => {
 
     return (
       <div className='mb-8'>
-        <h3 className='text-xl font-bold text-gray-900 mb-4 flex items-center'>
+        <h3 className='text-xl font-bold text-white mb-4 flex items-center'>
           <span className='mr-2'>📊</span>
           Indicadores Clave de Rendimiento
         </h3>
@@ -313,12 +318,12 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ analysisData }) => {
           {Object.entries(kpis).map(([key, value]) => (
             <div
               key={key}
-              className='bg-white p-4 rounded-lg shadow-sm border border-gray-200'
+              className='bg-white/10 p-4 rounded-lg shadow-sm border border-purple-400/30 backdrop-blur-sm'
             >
-              <div className='text-2xl font-bold text-indigo-600'>
+              <div className='text-2xl font-bold text-purple-400'>
                 {typeof value === 'number' ? value.toFixed(2) : value}
               </div>
-              <div className='text-sm text-gray-600 capitalize'>
+              <div className='text-sm text-white/70 capitalize'>
                 {key.replace(/_/g, ' ')}
               </div>
             </div>

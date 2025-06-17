@@ -1,7 +1,15 @@
 'use client';
 
 import React from 'react';
-import { Package, BarChart3, TrendingUp, Plus, List, Edit } from 'lucide-react';
+import {
+  Package,
+  BarChart3,
+  TrendingUp,
+  Plus,
+  List,
+  Edit,
+  Sparkles,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface QuickActionsProps {
@@ -18,40 +26,46 @@ const quickActions = [
     label: 'Análisis de Inventario',
     message:
       'Ejecuta un análisis completo de inventario con niveles de stock y recomendaciones',
-    color: 'bg-green-100 text-green-700 hover:bg-green-200',
+    gradient: 'from-emerald-500 to-green-600',
+    glow: 'shadow-emerald-500/25',
   },
   {
     icon: BarChart3,
     label: 'Rendimiento de Ventas',
     message: 'Analiza el rendimiento de ventas y insights de clientes',
-    color: 'bg-blue-100 text-blue-700 hover:bg-blue-200',
+    gradient: 'from-blue-500 to-cyan-600',
+    glow: 'shadow-blue-500/25',
   },
   {
     icon: Edit,
     label: 'Editar Inventario',
     message:
       'Editar producto: ID 1, Nombre "Nuevo Nombre", Precio $150, Cantidad 20',
-    color: 'bg-purple-100 text-purple-700 hover:bg-purple-200',
+    gradient: 'from-purple-500 to-violet-600',
+    glow: 'shadow-purple-500/25',
   },
   {
     icon: TrendingUp,
     label: 'Crear Venta',
     message:
       'Crear una nueva orden de venta: Cliente ID 1, Producto ID 1, Cantidad 2, Precio $29.99',
-    color: 'bg-orange-100 text-orange-700 hover:bg-orange-200',
+    gradient: 'from-orange-500 to-red-600',
+    glow: 'shadow-orange-500/25',
   },
   {
     icon: Plus,
     label: 'Añadir Producto',
     message:
       'Añadir producto: Nombre "Laptop HP", Categoría "Electrónicos", Precio $899, Cantidad 10',
-    color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200',
+    gradient: 'from-teal-500 to-emerald-600',
+    glow: 'shadow-teal-500/25',
   },
   {
     icon: List,
     label: 'Ver Inventario',
     message: 'Listar inventario completo con estados de stock',
-    color: 'bg-slate-100 text-slate-700 hover:bg-slate-200',
+    gradient: 'from-slate-500 to-gray-600',
+    glow: 'shadow-slate-500/25',
   },
 ];
 
@@ -63,11 +77,15 @@ export default function QuickActions({
   disabled = false,
 }: QuickActionsProps) {
   return (
-    <div className='border-t border-gray-200 p-4'>
-      <div className='mb-2'>
-        <h3 className='text-sm font-medium text-gray-700'>Acciones Rápidas</h3>
+    <div className='border-t border-white/10 backdrop-blur-xl bg-white/5 p-4'>
+      <div className='mb-3 flex items-center gap-2'>
+        <Sparkles className='h-4 w-4 text-yellow-400' />
+        <h3 className='text-base font-semibold text-white'>
+          Acciones Inteligentes
+        </h3>
       </div>
-      <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2'>
+
+      <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3'>
         {quickActions.map((action, index) => (
           <button
             key={index}
@@ -90,15 +108,43 @@ export default function QuickActions({
             }}
             disabled={disabled}
             className={cn(
-              'flex flex-col items-center p-3 rounded-lg transition-colors text-sm font-medium',
-              action.color,
+              'relative group flex flex-col items-center p-3 rounded-xl transition-all duration-200',
+              'backdrop-blur-sm bg-white/10 border border-white/20 hover:bg-white/20',
+              'text-white font-medium text-xs hover:scale-105',
+              action.glow,
               disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
             )}
           >
-            <action.icon className='h-5 w-5 mb-1' />
-            <span className='text-center'>{action.label}</span>
+            {/* Gradient background */}
+            <div
+              className={cn(
+                'absolute inset-0 rounded-xl bg-gradient-to-r opacity-0 group-hover:opacity-20 transition-opacity duration-200',
+                action.gradient
+              )}
+            />
+
+            {/* Icon with gradient */}
+            <div
+              className={cn(
+                'w-8 h-8 rounded-lg bg-gradient-to-r flex items-center justify-center mb-2 shadow-lg',
+                action.gradient
+              )}
+            >
+              <action.icon className='h-4 w-4 text-white' />
+            </div>
+
+            {/* Label */}
+            <span className='text-center leading-tight relative z-10'>
+              {action.label}
+            </span>
           </button>
         ))}
+      </div>
+
+      {/* Bottom indicator */}
+      <div className='flex items-center justify-center mt-3 text-white/40 text-xs'>
+        <div className='w-1 h-1 bg-white/40 rounded-full mr-2' />
+        <span>Selecciona una acción para comenzar</span>
       </div>
     </div>
   );

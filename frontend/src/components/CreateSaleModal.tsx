@@ -1,7 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, ShoppingCart, AlertTriangle, Loader2 } from 'lucide-react';
+import {
+  X,
+  ShoppingCart,
+  AlertTriangle,
+  Loader2,
+  AlertCircle,
+} from 'lucide-react';
 import Cookies from 'js-cookie';
 
 interface Product {
@@ -43,6 +49,17 @@ const CreateSaleModal: React.FC<CreateSaleModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [customerId, setCustomerId] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState('credit_card');
+
+  // Auto-hide error messages after 4 seconds
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError(null);
+      }, 4000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
   // Load products when modal opens
   useEffect(() => {
@@ -233,34 +250,37 @@ const CreateSaleModal: React.FC<CreateSaleModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4'>
-      <div className='bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden'>
+    <div className='fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50 p-4'>
+      <div className='relative backdrop-blur-xl bg-slate-900/90 border border-white/20 rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden'>
+        {/* Fondo gradiente interno */}
+        <div className='absolute inset-0 rounded-2xl bg-gradient-to-br from-slate-800/50 via-purple-900/30 to-slate-800/50' />
+
         {/* Header */}
-        <div className='flex items-center justify-between p-6 border-b'>
-          <h2 className='text-2xl font-bold text-slate-900 flex items-center gap-2'>
-            <ShoppingCart className='w-6 h-6 text-blue-600' />
+        <div className='relative z-10 flex items-center justify-between p-6 border-b border-white/10'>
+          <h2 className='text-2xl font-bold text-white flex items-center gap-2'>
+            <ShoppingCart className='w-6 h-6 text-blue-400' />
             Crear Nueva Venta
           </h2>
           <button
             onClick={onClose}
-            className='text-slate-600 hover:text-slate-800 transition-colors'
+            className='text-white/70 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-lg'
           >
             <X className='w-6 h-6' />
           </button>
         </div>
 
         {/* Content */}
-        <div className='flex h-[calc(90vh-140px)]'>
+        <div className='relative z-10 flex h-[calc(90vh-140px)]'>
           {/* Products List */}
-          <div className='flex-1 p-6 overflow-y-auto border-r'>
-            <h3 className='text-lg font-semibold mb-4 text-slate-900'>
+          <div className='flex-1 p-6 overflow-y-auto border-r border-white/10'>
+            <h3 className='text-lg font-semibold mb-4 text-white'>
               Productos Disponibles
             </h3>
 
             {loading ? (
               <div className='flex items-center justify-center py-12'>
-                <Loader2 className='h-8 w-8 animate-spin text-blue-600' />
-                <span className='ml-2 text-slate-700'>
+                <Loader2 className='h-8 w-8 animate-spin text-blue-400' />
+                <span className='ml-2 text-white/70'>
                   Cargando productos...
                 </span>
               </div>
@@ -269,33 +289,33 @@ const CreateSaleModal: React.FC<CreateSaleModalProps> = ({
                 {products.map((product, index) => (
                   <div
                     key={product.id || product.sku || `product-${index}`}
-                    className={`p-4 border rounded-lg ${
+                    className={`p-4 border border-white/20 rounded-lg ${
                       product.available_for_sale
-                        ? 'bg-white hover:bg-blue-50'
-                        : 'bg-red-50 opacity-60'
+                        ? 'bg-white/10 hover:bg-white/20'
+                        : 'bg-red-500/20 opacity-60'
                     }`}
                   >
                     <div className='flex items-center justify-between'>
                       <div className='flex-1'>
                         <div className='flex items-center gap-2 mb-1'>
-                          <h4 className='font-semibold text-slate-900'>
+                          <h4 className='font-semibold text-white'>
                             {product.name}
                           </h4>
-                          <span className='text-sm text-slate-700'>
+                          <span className='text-sm text-white/70'>
                             ({product.sku})
                           </span>
                         </div>
-                        <div className='flex items-center gap-4 text-sm text-slate-700'>
+                        <div className='flex items-center gap-4 text-sm text-white/70'>
                           <span className='font-medium'>
                             ${product.price.toFixed(2)}
                           </span>
                           <span>{product.category}</span>
                           <span>{product.location}</span>
                         </div>
-                        <div className='flex items-center gap-4 text-sm text-slate-700'>
+                        <div className='flex items-center gap-4 text-sm text-white/80'>
                           <span>Stock: {product.stock_quantity}</span>
                           {product.stock_quantity <= 5 && (
-                            <span className='text-red-600 font-medium flex items-center gap-1'>
+                            <span className='text-red-400 font-medium flex items-center gap-1'>
                               <AlertTriangle className='h-4 w-4' />
                               {product.stock_quantity === 1
                                 ? 'Stock crítico'
@@ -308,10 +328,10 @@ const CreateSaleModal: React.FC<CreateSaleModalProps> = ({
                       <button
                         onClick={() => addToCart(product)}
                         disabled={!product.available_for_sale}
-                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
                           product.available_for_sale
-                            ? 'bg-blue-600 text-white hover:bg-blue-700'
-                            : 'bg-red-200 text-red-600 cursor-not-allowed'
+                            ? 'bg-blue-500 text-white hover:bg-blue-600 shadow-lg'
+                            : 'bg-red-500/30 text-red-300 cursor-not-allowed border border-red-500/50'
                         }`}
                       >
                         {product.available_for_sale ? '+' : 'Sin Stock'}
@@ -324,34 +344,34 @@ const CreateSaleModal: React.FC<CreateSaleModalProps> = ({
           </div>
 
           {/* Cart */}
-          <div className='w-96 p-6 bg-blue-50'>
-            <h3 className='text-lg font-semibold mb-4 text-slate-900'>
+          <div className='w-96 p-6 bg-white/5 border-l border-white/10'>
+            <h3 className='text-lg font-semibold mb-4 text-white'>
               Carrito de Compras
             </h3>
 
             {/* Customer and Payment */}
             <div className='space-y-4 mb-6'>
               <div>
-                <label className='block text-sm font-medium text-slate-800 mb-1'>
+                <label className='block text-sm font-medium text-white mb-1'>
                   Cliente ID
                 </label>
                 <input
                   type='number'
                   value={customerId}
                   onChange={(e) => setCustomerId(parseInt(e.target.value) || 1)}
-                  className='w-full px-3 py-2 border border-gray-300 rounded-md text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500'
+                  className='w-full px-3 py-2 bg-white/10 border border-white/20 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50'
                   min='1'
                 />
               </div>
 
               <div>
-                <label className='block text-sm font-medium text-slate-800 mb-1'>
+                <label className='block text-sm font-medium text-white mb-1'>
                   Método de Pago
                 </label>
                 <select
                   value={paymentMethod}
                   onChange={(e) => setPaymentMethod(e.target.value)}
-                  className='w-full px-3 py-2 border border-gray-300 rounded-md text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500'
+                  className='w-full px-3 py-2 bg-white/10 border border-white/20 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50'
                 >
                   <option value='credit_card'>Tarjeta de Crédito</option>
                   <option value='debit_card'>Tarjeta de Débito</option>
@@ -364,20 +384,20 @@ const CreateSaleModal: React.FC<CreateSaleModalProps> = ({
             {/* Cart Items */}
             <div className='space-y-3 mb-6'>
               {cart.length === 0 ? (
-                <p className='text-slate-600 text-center py-8'>Carrito vacío</p>
+                <p className='text-white/60 text-center py-8'>Carrito vacío</p>
               ) : (
                 cart.map((item, index) => (
                   <div
                     key={item.product_id || `cart-item-${index}`}
-                    className='bg-white p-3 rounded-lg border'
+                    className='bg-white/10 p-3 rounded-lg border border-white/20'
                   >
                     <div className='flex items-center justify-between mb-2'>
-                      <h4 className='font-medium text-slate-900 text-sm'>
+                      <h4 className='font-medium text-white text-sm'>
                         {item.name}
                       </h4>
                       <button
                         onClick={() => removeFromCart(item.product_id)}
-                        className='text-red-500 hover:text-red-700'
+                        className='text-red-400 hover:text-red-300 p-1 rounded hover:bg-red-500/20 transition-colors'
                       >
                         <X className='w-4 h-4' />
                       </button>
@@ -389,23 +409,23 @@ const CreateSaleModal: React.FC<CreateSaleModalProps> = ({
                           onClick={() =>
                             updateQuantity(item.product_id, item.quantity - 1)
                           }
-                          className='w-6 h-6 flex items-center justify-center bg-gray-200 rounded text-slate-700 hover:bg-gray-300'
+                          className='w-6 h-6 flex items-center justify-center bg-white/20 rounded text-white hover:bg-white/30'
                         >
                           -
                         </button>
-                        <span className='w-8 text-center font-medium text-slate-900'>
+                        <span className='w-8 text-center font-medium text-white'>
                           {item.quantity}
                         </span>
                         <button
                           onClick={() =>
                             updateQuantity(item.product_id, item.quantity + 1)
                           }
-                          className='w-6 h-6 flex items-center justify-center bg-gray-200 rounded text-slate-700 hover:bg-gray-300'
+                          className='w-6 h-6 flex items-center justify-center bg-white/20 rounded text-white hover:bg-white/30'
                         >
                           +
                         </button>
                       </div>
-                      <span className='font-medium text-slate-900'>
+                      <span className='font-medium text-white'>
                         ${item.subtotal.toFixed(2)}
                       </span>
                     </div>
@@ -415,10 +435,10 @@ const CreateSaleModal: React.FC<CreateSaleModalProps> = ({
             </div>
 
             {/* Total */}
-            <div className='border-t pt-4 mb-6'>
+            <div className='border-t border-white/20 pt-4 mb-6'>
               <div className='flex justify-between items-center text-lg font-bold'>
-                <span className='text-slate-900'>Total:</span>
-                <span className='text-slate-900'>
+                <span className='text-white'>Total:</span>
+                <span className='text-white'>
                   ${getTotalAmount().toFixed(2)}
                 </span>
               </div>
@@ -426,8 +446,9 @@ const CreateSaleModal: React.FC<CreateSaleModalProps> = ({
 
             {/* Error Message */}
             {error && (
-              <div className='mb-4 p-3 bg-red-50 border border-red-200 rounded-md'>
-                <p className='text-red-600 text-sm'>{error}</p>
+              <div className='mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded-lg flex items-start space-x-2'>
+                <AlertCircle className='h-4 w-4 text-red-400 mt-0.5 flex-shrink-0' />
+                <p className='text-red-300 text-sm'>{error}</p>
               </div>
             )}
 
@@ -436,7 +457,7 @@ const CreateSaleModal: React.FC<CreateSaleModalProps> = ({
               <button
                 onClick={handleSubmit}
                 disabled={cart.length === 0 || submitting}
-                className='w-full bg-green-600 text-white py-3 px-4 rounded-md font-medium hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors'
+                className='w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 px-4 rounded-xl font-medium hover:from-green-600 hover:to-emerald-700 disabled:from-gray-500 disabled:to-gray-600 disabled:cursor-not-allowed transition-all duration-300 shadow-lg'
               >
                 {submitting ? (
                   <div className='flex items-center justify-center gap-2'>
@@ -450,7 +471,7 @@ const CreateSaleModal: React.FC<CreateSaleModalProps> = ({
 
               <button
                 onClick={onClose}
-                className='w-full bg-red-500 text-white py-3 px-4 rounded-md font-medium hover:bg-red-600 transition-colors'
+                className='w-full bg-white/10 border border-white/20 text-white py-3 px-4 rounded-xl font-medium hover:bg-white/20 transition-all duration-300'
               >
                 Cancelar
               </button>

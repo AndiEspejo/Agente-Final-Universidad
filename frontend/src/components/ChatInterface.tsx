@@ -1,21 +1,19 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, BarChart3, LogOut, User } from 'lucide-react';
+import { Send, BarChart3, LogOut, User, Sparkles, Zap } from 'lucide-react';
+
 import { ChatMessage } from '@/types/chat';
 import { sendChatMessage } from '@/lib/api';
-import { cn, generateId } from '@/lib/utils';
+import { generateId } from '@/lib/utils';
 import { MessageItem, QuickActions } from '@/components';
 import CreateSaleModal from '@/components/CreateSaleModal';
 import CreateProductModal from '@/components/CreateProductModal';
 import EditInventoryModal from '@/components/EditInventoryModal';
+import PremiumButton from '@/components/ui/PremiumButton';
 import { useAuth } from '@/contexts/AuthContext';
 
-interface ChatInterfaceProps {
-  className?: string;
-}
-
-export default function ChatInterface({ className }: ChatInterfaceProps) {
+export default function ChatInterface() {
   const { user, logout } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -46,16 +44,36 @@ Prueba preguntándome cosas como:
   const [showSaleModal, setShowSaleModal] = useState(false);
   const [showProductModal, setShowProductModal] = useState(false);
   const [showEditInventoryModal, setShowEditInventoryModal] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Función simple y directa para scroll
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesContainerRef.current) {
+      const container = messagesContainerRef.current;
+      // Scroll inmediato
+      container.scrollTop = container.scrollHeight;
+      // Scroll con delay para asegurar que funcione
+      setTimeout(() => {
+        container.scrollTop = container.scrollHeight;
+      }, 100);
+      setTimeout(() => {
+        container.scrollTop = container.scrollHeight;
+      }, 500);
+    }
   };
 
+  // Scroll cuando cambian los mensajes
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Scroll adicional cuando cambia el número de mensajes
+  useEffect(() => {
+    const timer = setTimeout(scrollToBottom, 1000);
+    return () => clearTimeout(timer);
+  }, [messages.length]);
 
   const handleSendMessage = async (message?: string) => {
     const messageText = message || inputValue.trim();
@@ -80,13 +98,15 @@ Prueba preguntándome cosas como:
     setInputValue('');
     setIsLoading(true);
 
+    // Scroll después de agregar mensajes
+    setTimeout(scrollToBottom, 100);
+
     try {
       const response = await sendChatMessage({
         message: messageText,
         context: {},
       });
 
-      // Remove loading message and add actual response
       setMessages((prev) => {
         const withoutLoading = prev.slice(0, -1);
         const assistantMessage: ChatMessage = {
@@ -100,10 +120,13 @@ Prueba preguntándome cosas como:
         };
         return [...withoutLoading, assistantMessage];
       });
+
+      // Scroll después de recibir respuesta
+      setTimeout(scrollToBottom, 200);
+      setTimeout(scrollToBottom, 1000); // Scroll adicional para contenido que se carga tarde
     } catch (error) {
       console.error('Error sending message:', error);
 
-      // Remove loading message and add error message
       setMessages((prev) => {
         const withoutLoading = prev.slice(0, -1);
         const errorMessage: ChatMessage = {
@@ -175,102 +198,148 @@ Prueba preguntándome cosas como:
   };
 
   return (
-    <div className={cn('flex flex-col h-full bg-white', className)}>
-      {/* Header */}
-      <div className='border-b border-gray-200 p-4'>
+    <div className='h-full w-full flex flex-col bg-transparent'>
+      {/* Header Compacto */}
+      <div className='flex-shrink-0 border-b border-white/10 backdrop-blur-xl bg-white/5 p-3'>
         <div className='flex items-center justify-between'>
-          <div>
-            <h1 className='text-xl font-semibold text-gray-900 flex items-center gap-2'>
-              <BarChart3 className='h-6 w-6 text-blue-600' />
-              SmartStock AI
-            </h1>
-            <p className='text-sm text-gray-600 mt-1'>
-              Transformando la Gestión de Inventario
-            </p>
+          <div className='flex items-center gap-3'>
+            <div className='relative'>
+              <div className='w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center'>
+                <BarChart3 className='h-4 w-4 text-white' />
+              </div>
+              <div className='absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full border border-white' />
+            </div>
+            <div>
+              <h1 className='text-lg font-bold text-white flex items-center gap-1'>
+                SmartStock AI
+                <Sparkles className='h-3 w-3 text-yellow-400' />
+              </h1>
+              <p className='text-white/60 text-xs'>
+                Enterprise Intelligence Platform
+              </p>
+            </div>
           </div>
 
-          <div className='flex items-center gap-3'>
-            <div className='flex items-center gap-2 text-sm text-gray-600'>
-              <User className='h-4 w-4' />
-              <span>{user?.full_name || user?.username}</span>
+          <div className='flex items-center gap-2'>
+            <div className='flex items-center gap-1 px-2 py-1 bg-white/10 rounded-md border border-white/20'>
+              <User className='h-3 w-3 text-white/70' />
+              <span className='text-white/90 text-xs'>
+                {user?.full_name || user?.username}
+              </span>
             </div>
-            <button
+
+            <PremiumButton
+              variant='ghost'
+              size='sm'
               onClick={logout}
-              className='flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors'
-              title='Cerrar sesión'
+              className='text-white/70 hover:text-red-400 px-2 py-1 text-xs'
             >
-              <LogOut className='h-4 w-4' />
+              <LogOut className='h-3 w-3 mr-1' />
               Salir
-            </button>
+            </PremiumButton>
           </div>
+        </div>
+
+        <div className='flex items-center gap-2 mt-2 text-white/50 text-xs'>
+          <div className='w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse' />
+          <span>Sistema de IA Activo</span>
+          <Zap className='h-3 w-3 ml-1 text-yellow-400' />
+          <span>Multi-Agent Architecture</span>
         </div>
       </div>
 
-      {/* Messages Area */}
-      <div className='flex-1 overflow-y-auto p-4 space-y-4'>
-        {messages.map((message) => (
-          <MessageItem key={message.id} message={message} />
-        ))}
-        <div ref={messagesEndRef} />
-      </div>
+      {/* Área de Mensajes - OCUPA TODO EL ESPACIO RESTANTE */}
+      <div className='flex-1 min-h-0 flex flex-col'>
+        <div
+          ref={messagesContainerRef}
+          className='flex-1 overflow-y-auto overflow-x-hidden p-4'
+          style={{
+            scrollBehavior: 'smooth',
+          }}
+        >
+          <div className='space-y-4'>
+            {messages.map((message) => (
+              <div key={message.id}>
+                <MessageItem message={message} />
+              </div>
+            ))}
+            <div className='h-8' />
+          </div>
+        </div>
 
-      {/* Quick Actions */}
-      <QuickActions
-        onAction={handleQuickAction}
-        onCreateSaleClick={handleCreateSaleClick}
-        onCreateProductClick={handleCreateProductClick}
-        onEditInventoryClick={handleEditInventoryClick}
-        disabled={isLoading}
-      />
-
-      {/* Input Area */}
-      <div className='border-t border-gray-200 p-4'>
-        <div className='flex gap-3'>
-          <input
-            ref={inputRef}
-            type='text'
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder='Pregúntame sobre tu inventario, ventas o rendimiento empresarial...'
-            className='flex-1 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+        {/* Quick Actions - Siempre Visible */}
+        <div className='flex-shrink-0'>
+          <QuickActions
+            onAction={handleQuickAction}
+            onCreateSaleClick={handleCreateSaleClick}
+            onCreateProductClick={handleCreateProductClick}
+            onEditInventoryClick={handleEditInventoryClick}
             disabled={isLoading}
           />
-          <button
-            onClick={() => handleSendMessage()}
-            disabled={!inputValue.trim() || isLoading}
-            className={cn(
-              'px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2',
-              inputValue.trim() && !isLoading
-                ? 'bg-blue-600 text-white hover:bg-blue-700'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            )}
-          >
-            {isLoading ? (
-              <Loader2 className='h-4 w-4 animate-spin' />
-            ) : (
-              <Send className='h-4 w-4' />
-            )}
-            Enviar
-          </button>
+        </div>
+
+        {/* Input Area */}
+        <div className='flex-shrink-0 border-t border-white/10 backdrop-blur-xl bg-white/5 p-4'>
+          <div className='flex gap-3 items-end'>
+            <div className='flex-1 relative'>
+              <input
+                ref={inputRef}
+                type='text'
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder='Pregúntame sobre tu inventario, ventas o rendimiento empresarial...'
+                className='w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 backdrop-blur-sm transition-all duration-300 text-sm'
+                disabled={isLoading}
+              />
+            </div>
+
+            <PremiumButton
+              onClick={() => handleSendMessage()}
+              disabled={!inputValue.trim() || isLoading}
+              loading={isLoading}
+              glow={!!inputValue.trim()}
+              className='px-4 py-3'
+              size='sm'
+            >
+              {!isLoading && <Send className='h-4 w-4' />}
+              Enviar
+            </PremiumButton>
+          </div>
+
+          {/* Indicador de carga */}
+          {isLoading && (
+            <div className='flex items-center gap-2 mt-2 text-white/60 text-xs'>
+              <div className='flex gap-1'>
+                <div className='w-1 h-1 bg-blue-400 rounded-full animate-pulse' />
+                <div
+                  className='w-1 h-1 bg-purple-400 rounded-full animate-pulse'
+                  style={{ animationDelay: '0.2s' }}
+                />
+                <div
+                  className='w-1 h-1 bg-cyan-400 rounded-full animate-pulse'
+                  style={{ animationDelay: '0.4s' }}
+                />
+              </div>
+              <span>SmartStock AI está procesando tu solicitud...</span>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Create Sale Modal */}
+      {/* Modals */}
       <CreateSaleModal
         isOpen={showSaleModal}
         onClose={() => setShowSaleModal(false)}
         onSaleCreated={handleSaleCreated}
       />
 
-      {/* Create Product Modal */}
       <CreateProductModal
         isOpen={showProductModal}
         onClose={() => setShowProductModal(false)}
         onProductsCreated={handleProductsCreated}
       />
 
-      {/* Edit Inventory Modal */}
       <EditInventoryModal
         isOpen={showEditInventoryModal}
         onClose={() => setShowEditInventoryModal(false)}

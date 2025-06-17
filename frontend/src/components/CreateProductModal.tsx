@@ -90,8 +90,13 @@ const CreateProductModal: React.FC<CreateProductModalProps> = ({
       if (product.quantity < 1) {
         errors.push(`Producto ${index + 1}: La cantidad debe ser mayor a 0`);
       }
-      if (product.price !== undefined && product.price < 0) {
-        errors.push(`Producto ${index + 1}: El precio no puede ser negativo`);
+      if (!product.price || product.price <= 0) {
+        errors.push(
+          `Producto ${index + 1}: El precio es obligatorio y debe ser mayor a 0`
+        );
+      }
+      if (!product.category || !product.category.trim()) {
+        errors.push(`Producto ${index + 1}: La categoría es obligatoria`);
       }
     });
 
@@ -123,11 +128,10 @@ const CreateProductModal: React.FC<CreateProductModalProps> = ({
           const productData = {
             name: product.name.trim(),
             quantity: product.quantity,
-            price: product.price || 50.0, // Default price if not provided
-            category: product.category
-              ? CATEGORIES[product.category as keyof typeof CATEGORIES] ||
-                'Other'
-              : 'Other',
+            price: product.price!, // Now required, so we can use non-null assertion
+            category:
+              CATEGORIES[product.category! as keyof typeof CATEGORIES] ||
+              'Other',
             description: product.description || '',
           };
 
@@ -202,25 +206,34 @@ const CreateProductModal: React.FC<CreateProductModalProps> = ({
   };
 
   const isProductValid = (product: ProductToAdd) => {
-    return product.name.trim() && product.quantity >= 1;
+    return (
+      product.name.trim() &&
+      product.quantity >= 1 &&
+      product.price !== undefined &&
+      product.price > 0 &&
+      product.category &&
+      product.category.trim()
+    );
   };
 
   const canSubmit = products.some(isProductValid) && !submitting;
 
   return (
-    <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4'>
-      <div className='bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden'>
+    <div className='fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50 p-4'>
+      <div className='relative backdrop-blur-xl bg-slate-900/90 border border-white/20 rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden'>
+        <div className='absolute inset-0 rounded-2xl bg-gradient-to-br from-slate-800/50 via-purple-900/30 to-slate-800/50 pointer-events-none' />
+
         {/* Header */}
-        <div className='flex items-center justify-between p-6 border-b border-gray-200'>
+        <div className='relative z-10 flex items-center justify-between p-6 border-b border-white/10'>
           <div className='flex items-center space-x-3'>
-            <Package className='h-6 w-6 text-green-600' />
-            <h2 className='text-xl font-semibold text-gray-900'>
+            <Package className='h-6 w-6 text-green-400' />
+            <h2 className='text-xl font-semibold text-white'>
               Agregar Productos al Inventario
             </h2>
           </div>
           <button
             onClick={handleClose}
-            className='text-gray-400 hover:text-gray-600 transition-colors'
+            className='text-white/70 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-lg'
             disabled={submitting}
           >
             <X className='h-6 w-6' />
@@ -228,11 +241,11 @@ const CreateProductModal: React.FC<CreateProductModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className='p-6 max-h-[60vh] overflow-y-auto'>
+        <div className='relative z-10 p-6 max-h-[60vh] overflow-y-auto'>
           {error && (
-            <div className='mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start space-x-2'>
-              <AlertCircle className='h-5 w-5 text-red-500 mt-0.5 flex-shrink-0' />
-              <span className='text-sm text-red-700'>{error}</span>
+            <div className='mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded-lg flex items-start space-x-2'>
+              <AlertCircle className='h-5 w-5 text-red-400 mt-0.5 flex-shrink-0' />
+              <span className='text-sm text-red-300'>{error}</span>
             </div>
           )}
 
@@ -242,21 +255,21 @@ const CreateProductModal: React.FC<CreateProductModalProps> = ({
                 key={product.id}
                 className={`p-4 border rounded-lg ${
                   successProducts.includes(product.name)
-                    ? 'border-green-200 bg-green-50'
-                    : 'border-gray-200'
+                    ? 'border-green-400/30 bg-green-500/10'
+                    : 'border-white/20 bg-white/5'
                 }`}
               >
                 <div className='flex items-center justify-between mb-3'>
-                  <h3 className='font-medium text-gray-900 flex items-center space-x-2'>
+                  <h3 className='font-medium text-white flex items-center space-x-2'>
                     <span>Producto {index + 1}</span>
                     {successProducts.includes(product.name) && (
-                      <Check className='h-4 w-4 text-green-500' />
+                      <Check className='h-4 w-4 text-green-400' />
                     )}
                   </h3>
                   {products.length > 1 && (
                     <button
                       onClick={() => removeProduct(product.id)}
-                      className='text-red-500 hover:text-red-700 transition-colors'
+                      className='text-red-400 hover:text-red-300 transition-colors'
                       disabled={submitting}
                     >
                       <Trash2 className='h-4 w-4' />
@@ -267,7 +280,7 @@ const CreateProductModal: React.FC<CreateProductModalProps> = ({
                 <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                   {/* Product Name - Required */}
                   <div>
-                    <label className='block text-sm font-medium text-gray-700 mb-1'>
+                    <label className='block text-sm font-medium text-white/80 mb-1'>
                       Nombre del Producto *
                     </label>
                     <input
@@ -276,7 +289,7 @@ const CreateProductModal: React.FC<CreateProductModalProps> = ({
                       onChange={(e) =>
                         updateProduct(product.id, 'name', e.target.value)
                       }
-                      className='w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-green-500'
+                      className='w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:ring-2 focus:ring-green-400 focus:border-green-400'
                       placeholder='Ej: Laptop HP Pavilion'
                       disabled={submitting}
                     />
@@ -284,13 +297,13 @@ const CreateProductModal: React.FC<CreateProductModalProps> = ({
 
                   {/* Quantity - Required */}
                   <div>
-                    <label className='block text-sm font-medium text-gray-700 mb-1'>
+                    <label className='block text-sm font-medium text-white/80 mb-1'>
                       Cantidad *
                     </label>
                     <div className='flex items-center space-x-2'>
                       <button
                         onClick={() => updateQuantity(product.id, -1)}
-                        className='p-1 text-gray-500 hover:text-gray-700 border border-gray-300 rounded'
+                        className='p-1 text-white/60 hover:text-white bg-white/10 border border-white/20 rounded'
                         disabled={product.quantity <= 1 || submitting}
                       >
                         <Minus className='h-4 w-4' />
@@ -305,13 +318,13 @@ const CreateProductModal: React.FC<CreateProductModalProps> = ({
                             Math.max(1, parseInt(e.target.value) || 1)
                           )
                         }
-                        className='w-20 px-3 py-2 border border-gray-300 rounded-lg text-center text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-green-500'
+                        className='w-20 px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-center text-white focus:ring-2 focus:ring-green-400 focus:border-green-400'
                         min='1'
                         disabled={submitting}
                       />
                       <button
                         onClick={() => updateQuantity(product.id, 1)}
-                        className='p-1 text-gray-500 hover:text-gray-700 border border-gray-300 rounded'
+                        className='p-1 text-white/60 hover:text-white bg-white/10 border border-white/20 rounded'
                         disabled={submitting}
                       >
                         <Plus className='h-4 w-4' />
@@ -319,35 +332,41 @@ const CreateProductModal: React.FC<CreateProductModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Category - Optional */}
+                  {/* Category - Required */}
                   <div>
-                    <label className='block text-sm font-medium text-gray-700 mb-1'>
-                      Categoría
+                    <label className='block text-sm font-medium text-white/80 mb-1'>
+                      Categoría *
                     </label>
                     <select
                       value={product.category || ''}
                       onChange={(e) =>
                         updateProduct(product.id, 'category', e.target.value)
                       }
-                      className='w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-green-500'
+                      className='w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:ring-2 focus:ring-green-400 focus:border-green-400'
                       disabled={submitting}
                     >
-                      <option value=''>Seleccionar categoría</option>
+                      <option value='' className='bg-slate-800 text-white'>
+                        Seleccionar categoría
+                      </option>
                       {Object.keys(CATEGORIES).map((cat) => (
-                        <option key={cat} value={cat}>
+                        <option
+                          key={cat}
+                          value={cat}
+                          className='bg-slate-800 text-white'
+                        >
                           {cat}
                         </option>
                       ))}
                     </select>
                   </div>
 
-                  {/* Price - Optional */}
+                  {/* Price - Required */}
                   <div>
-                    <label className='block text-sm font-medium text-gray-700 mb-1'>
-                      Precio
+                    <label className='block text-sm font-medium text-white/80 mb-1'>
+                      Precio *
                     </label>
                     <div className='relative'>
-                      <span className='absolute left-3 top-2 text-gray-500'>
+                      <span className='absolute left-3 top-2 text-white/60'>
                         $
                       </span>
                       <input
@@ -362,7 +381,7 @@ const CreateProductModal: React.FC<CreateProductModalProps> = ({
                               : undefined
                           )
                         }
-                        className='w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-green-500'
+                        className='w-full pl-8 pr-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:ring-2 focus:ring-green-400 focus:border-green-400'
                         placeholder='50.00'
                         min='0'
                         step='0.01'
@@ -373,7 +392,7 @@ const CreateProductModal: React.FC<CreateProductModalProps> = ({
 
                   {/* Description - Optional */}
                   <div className='md:col-span-2'>
-                    <label className='block text-sm font-medium text-gray-700 mb-1'>
+                    <label className='block text-sm font-medium text-white/80 mb-1'>
                       Descripción
                     </label>
                     <textarea
@@ -381,7 +400,7 @@ const CreateProductModal: React.FC<CreateProductModalProps> = ({
                       onChange={(e) =>
                         updateProduct(product.id, 'description', e.target.value)
                       }
-                      className='w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-green-500'
+                      className='w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:ring-2 focus:ring-green-400 focus:border-green-400'
                       placeholder='Descripción opcional del producto'
                       rows={2}
                       disabled={submitting}
@@ -396,7 +415,7 @@ const CreateProductModal: React.FC<CreateProductModalProps> = ({
           <div className='mt-4 flex justify-center'>
             <button
               onClick={addNewProduct}
-              className='flex items-center space-x-2 px-4 py-2 border border-green-300 text-green-700 rounded-lg hover:bg-green-50 transition-colors'
+              className='flex items-center space-x-2 px-4 py-2 bg-white/10 border border-white/20 text-white/80 rounded-lg hover:bg-white/20 hover:text-white transition-colors'
               disabled={submitting}
             >
               <Plus className='h-4 w-4' />
@@ -406,38 +425,40 @@ const CreateProductModal: React.FC<CreateProductModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className='flex items-center justify-between p-6 border-t border-gray-200 bg-blue-50'>
-          <div className='text-sm text-gray-600'>
-            * Campos obligatorios: Nombre y Cantidad
+        <div className='relative z-10 flex items-center justify-between p-6 border-t border-white/10 bg-white/5'>
+          <div className='text-sm text-white/60'>
+            * Campos obligatorios: Nombre, Precio, Cantidad y Categoría
           </div>
           <div className='flex space-x-3'>
             <button
               onClick={handleClose}
-              className='px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-blue-50 transition-colors'
+              className='px-4 py-2 bg-white/10 border border-white/20 text-white/80 rounded-lg hover:bg-white/20 hover:text-white transition-colors'
               disabled={submitting}
             >
               Cancelar
             </button>
-            <button
-              onClick={handleSubmit}
-              disabled={!canSubmit}
-              className={`px-6 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2 ${
-                canSubmit
-                  ? 'bg-green-600 text-white hover:bg-green-700'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
-            >
-              {submitting && (
-                <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-white'></div>
-              )}
-              <span>
-                {submitting
-                  ? 'Agregando...'
-                  : `Agregar ${
-                      products.filter(isProductValid).length
-                    } producto(s)`}
-              </span>
-            </button>
+            <div className='w-full bg-white/5 rounded-xl'>
+              <button
+                onClick={handleSubmit}
+                disabled={!canSubmit}
+                className={`w-full py-3 px-4 rounded-xl font-medium transition-all duration-300 shadow-lg ${
+                  canSubmit
+                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700'
+                    : 'bg-gray-500 text-white/40 cursor-not-allowed'
+                }`}
+              >
+                {submitting && (
+                  <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-white'></div>
+                )}
+                <span>
+                  {submitting
+                    ? 'Agregando...'
+                    : `Agregar ${
+                        products.filter(isProductValid).length
+                      } producto(s)`}
+                </span>
+              </button>
+            </div>
           </div>
         </div>
       </div>

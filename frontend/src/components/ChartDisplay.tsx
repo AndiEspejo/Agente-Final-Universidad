@@ -74,8 +74,8 @@ const ChartDisplay: React.FC<ChartDisplayProps> = ({
 
     if (!data || data.length === 0) {
       return (
-        <div className='flex items-center justify-center h-64 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300'>
-          <div className='text-center text-gray-500'>
+        <div className='flex items-center justify-center h-64 bg-white/5 rounded-lg border-2 border-dashed border-white/20'>
+          <div className='text-center text-white/60'>
             <div className='text-lg font-medium'>No hay datos disponibles</div>
             <div className='text-sm'>No se pudo generar la visualización</div>
           </div>
@@ -99,22 +99,23 @@ const ChartDisplay: React.FC<ChartDisplayProps> = ({
                   <stop offset='95%' stopColor='#3B82F6' stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray='3 3' stroke='#e2e8f0' />
+              <CartesianGrid strokeDasharray='3 3' stroke='#ffffff20' />
               <XAxis
                 dataKey='name'
-                stroke='#64748b'
+                stroke='#ffffff80'
                 fontSize={12}
                 angle={-45}
                 textAnchor='end'
                 height={80}
               />
-              <YAxis stroke='#64748b' fontSize={12} />
+              <YAxis stroke='#ffffff80' fontSize={12} />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: '#ffffff',
-                  border: '1px solid #e2e8f0',
+                  backgroundColor: '#1e293b',
+                  border: '1px solid #ffffff20',
                   borderRadius: '8px',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3)',
+                  color: '#ffffff',
                 }}
               />
               <Legend />
@@ -176,22 +177,23 @@ const ChartDisplay: React.FC<ChartDisplayProps> = ({
                   </linearGradient>
                 ))}
               </defs>
-              <CartesianGrid strokeDasharray='3 3' stroke='#e2e8f0' />
+              <CartesianGrid strokeDasharray='3 3' stroke='#ffffff20' />
               <XAxis
                 dataKey='name'
-                stroke='#64748b'
+                stroke='#ffffff80'
                 fontSize={12}
                 angle={-45}
                 textAnchor='end'
                 height={80}
               />
-              <YAxis stroke='#64748b' fontSize={12} />
+              <YAxis stroke='#ffffff80' fontSize={12} />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: '#ffffff',
-                  border: '1px solid #e2e8f0',
+                  backgroundColor: '#1e293b',
+                  border: '1px solid #ffffff20',
                   borderRadius: '8px',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3)',
+                  color: '#ffffff',
                 }}
               />
               <Legend />
@@ -271,10 +273,11 @@ const ChartDisplay: React.FC<ChartDisplayProps> = ({
               </Pie>
               <Tooltip
                 contentStyle={{
-                  backgroundColor: '#ffffff',
-                  border: '1px solid #e2e8f0',
+                  backgroundColor: '#1e293b',
+                  border: '1px solid #ffffff20',
                   borderRadius: '8px',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3)',
+                  color: '#ffffff',
                 }}
                 formatter={(value, name) => [`${value} productos`, name]}
               />
@@ -313,9 +316,9 @@ const ChartDisplay: React.FC<ChartDisplayProps> = ({
                   <stop offset='95%' stopColor='#10B981' stopOpacity={0.1} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray='3 3' stroke='#e2e8f0' />
-              <XAxis dataKey='name' stroke='#64748b' fontSize={12} />
-              <YAxis stroke='#64748b' fontSize={12} />
+              <CartesianGrid strokeDasharray='3 3' stroke='#ffffff20' />
+              <XAxis dataKey='name' stroke='#ffffff80' fontSize={12} />
+              <YAxis stroke='#ffffff80' fontSize={12} />
               <Tooltip />
               <Area
                 type='monotone'
@@ -330,8 +333,8 @@ const ChartDisplay: React.FC<ChartDisplayProps> = ({
 
       default:
         return (
-          <div className='flex items-center justify-center h-64 bg-gray-50 rounded-lg'>
-            <div className='text-gray-500 text-center'>
+          <div className='flex items-center justify-center h-64 bg-white/5 rounded-lg'>
+            <div className='text-white/60 text-center'>
               <div className='text-lg font-medium'>
                 Tipo de gráfico no soportado
               </div>
@@ -349,8 +352,8 @@ const ChartDisplay: React.FC<ChartDisplayProps> = ({
     if (!summary) return null;
 
     return (
-      <div className='bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200'>
-        <h4 className='font-semibold text-blue-900 mb-3 flex items-center'>
+      <div className='bg-gradient-to-r from-purple-500/20 to-blue-500/20 p-4 rounded-lg border border-purple-400/30 backdrop-blur-sm'>
+        <h4 className='font-semibold text-white mb-3 flex items-center'>
           <span className='mr-2'>📊</span>
           Resumen: {title}
         </h4>
@@ -358,12 +361,12 @@ const ChartDisplay: React.FC<ChartDisplayProps> = ({
           {Object.entries(summary).map(([key, value]) => (
             <div
               key={key}
-              className='bg-white p-2 rounded border border-blue-100'
+              className='bg-white/10 p-2 rounded border border-white/20 backdrop-blur-sm'
             >
-              <div className='text-blue-700 font-medium text-xs uppercase tracking-wide'>
+              <div className='text-purple-300 font-medium text-xs uppercase tracking-wide'>
                 {key.replace(/_/g, ' ')}
               </div>
-              <div className='text-blue-900 font-bold'>
+              <div className='text-white font-bold'>
                 {typeof value === 'number'
                   ? key.includes('percentage') || key.includes('score')
                     ? `${value.toFixed(1)}%`
@@ -380,9 +383,9 @@ const ChartDisplay: React.FC<ChartDisplayProps> = ({
   if (!visualizations || visualizations.length === 0) {
     return (
       <div
-        className={`bg-gray-50 p-8 rounded-lg border-2 border-dashed border-gray-300 ${className}`}
+        className={`bg-white/5 p-8 rounded-lg border-2 border-dashed border-white/20 ${className}`}
       >
-        <div className='text-center text-gray-500'>
+        <div className='text-center text-white/60'>
           <div className='text-xl font-medium mb-2'>
             📊 No hay gráficas disponibles
           </div>
@@ -397,10 +400,10 @@ const ChartDisplay: React.FC<ChartDisplayProps> = ({
   return (
     <div className={`space-y-8 ${className}`}>
       <div className='text-center mb-6'>
-        <h2 className='text-2xl font-bold text-gray-900 mb-2'>
+        <h2 className='text-2xl font-bold text-white mb-2'>
           📈 Análisis Avanzado de Inventario
         </h2>
-        <p className='text-gray-600'>
+        <p className='text-white/70'>
           Dashboard inteligente con {visualizations.length} visualizaciones
           generadas por IA
         </p>
@@ -409,42 +412,45 @@ const ChartDisplay: React.FC<ChartDisplayProps> = ({
       {sortedVisualizations.map((visualization, index) => (
         <div
           key={index}
-          className='bg-white p-6 rounded-xl shadow-lg border border-gray-200 hover:shadow-xl transition-shadow duration-300'
+          className='relative bg-slate-900/90 backdrop-blur-xl p-6 rounded-xl shadow-lg border border-white/20 hover:shadow-xl transition-shadow duration-300'
         >
-          <div className='mb-6'>
-            <div className='flex items-center justify-between mb-2'>
-              <h3 className='text-xl font-bold text-gray-900 flex items-center'>
-                <span className='mr-2'>
-                  {visualization.type === 'pie'
-                    ? '🥧'
-                    : visualization.type === 'line'
-                    ? '📈'
-                    : visualization.type === 'bar'
-                    ? '📊'
-                    : '📉'}
-                </span>
-                {visualization.title}
-              </h3>
-              {visualization.chart_id && (
-                <span className='text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full'>
-                  ID: {visualization.chart_id}
-                </span>
+          <div className='absolute inset-0 rounded-xl bg-gradient-to-br from-slate-800/50 via-purple-900/30 to-slate-800/50 pointer-events-none' />
+          <div className='relative z-10'>
+            <div className='mb-6'>
+              <div className='flex items-center justify-between mb-2'>
+                <h3 className='text-xl font-bold text-white flex items-center'>
+                  <span className='mr-2'>
+                    {visualization.type === 'pie'
+                      ? '🥧'
+                      : visualization.type === 'line'
+                      ? '📈'
+                      : visualization.type === 'bar'
+                      ? '📊'
+                      : '📉'}
+                  </span>
+                  {visualization.title}
+                </h3>
+                {visualization.chart_id && (
+                  <span className='text-xs bg-white/10 text-white/70 px-2 py-1 rounded-full border border-white/20'>
+                    ID: {visualization.chart_id}
+                  </span>
+                )}
+              </div>
+              {visualization.description && (
+                <p className='text-white/70 text-sm'>
+                  {visualization.description}
+                </p>
               )}
             </div>
-            {visualization.description && (
-              <p className='text-gray-600 text-sm'>
-                {visualization.description}
-              </p>
+
+            {renderChart(visualization)}
+
+            {visualization.summary && (
+              <div className='mt-6'>
+                {renderSummaryCard(visualization.summary, visualization.title)}
+              </div>
             )}
           </div>
-
-          {renderChart(visualization)}
-
-          {visualization.summary && (
-            <div className='mt-6'>
-              {renderSummaryCard(visualization.summary, visualization.title)}
-            </div>
-          )}
         </div>
       ))}
     </div>
