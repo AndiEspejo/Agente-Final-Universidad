@@ -18,6 +18,7 @@ class IntentType(Enum):
     CREATE_SALE = "create_sale"
     LIST_INVENTORY = "list_inventory"
     INVENTORY_ANALYSIS = "inventory_analysis"
+    RESTOCK_QUERY = "restock_query"
     SALES_ANALYSIS = "sales_analysis"
     EDIT_INVENTORY = "edit_inventory"
     HELP = "help"
@@ -69,6 +70,14 @@ class IntentClassifier:
             return {
                 "intent": IntentType.LIST_INVENTORY,
                 "confidence": 0.8,
+                "parameters": {},
+            }
+
+        # Restock queries (specific before general analysis)
+        elif self._is_restock_query_intent(message_lower):
+            return {
+                "intent": IntentType.RESTOCK_QUERY,
+                "confidence": 0.85,
                 "parameters": {},
             }
 
@@ -181,6 +190,29 @@ class IntentClassifier:
         ]
         return any(keyword in message_lower for keyword in list_keywords)
 
+    def _is_restock_query_intent(self, message_lower: str) -> bool:
+        """Check if message is specifically about restock/reabastecimiento."""
+        restock_keywords = [
+            "reabastecimiento",
+            "reabastecer",
+            "productos necesitan",
+            "qué productos necesitan",
+            "cuáles productos necesitan",
+            "productos con poco",
+            "productos agotados",
+            "falta stock",
+            "necesitan stock",
+            "stock bajo",
+            "stock crítico",
+            "low stock",
+            "out of stock",
+            "critical stock",
+            "need restock",
+            "which products need",
+            "what products need",
+        ]
+        return any(keyword in message_lower for keyword in restock_keywords)
+
     def _is_inventory_analysis_intent(self, message_lower: str) -> bool:
         """Check if message is about inventory analysis."""
         analysis_keywords = [
@@ -192,6 +224,21 @@ class IntentClassifier:
             "analyze",
             "restock",
             "run",
+            "reabastecimiento",
+            "reabastecer",
+            "stock bajo",
+            "stock crítico",
+            "productos necesitan",
+            "qué productos",
+            "cuáles productos",
+            "productos con poco",
+            "productos agotados",
+            "falta stock",
+            "necesitan stock",
+            "low stock",
+            "out of stock",
+            "critical stock",
+            "need restock",
         ]
         return any(keyword in message_lower for keyword in analysis_keywords)
 

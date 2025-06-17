@@ -65,6 +65,9 @@ class ChatOrchestrator:
             elif intent_type == IntentType.INVENTORY_ANALYSIS:
                 return await self._handle_inventory_analysis()
 
+            elif intent_type == IntentType.RESTOCK_QUERY:
+                return await self._handle_restock_query()
+
             elif intent_type == IntentType.SALES_ANALYSIS:
                 return await self.sales_agent.handle_sales_analysis()
 
@@ -194,6 +197,105 @@ class ChatOrchestrator:
             return ChatResponse(
                 response=f"❌ Error listando inventario: {str(e)}",
                 workflow_id="list-inventory-error-"
+                + datetime.now().strftime("%Y%m%d-%H%M%S"),
+            )
+
+    async def _handle_restock_query(self) -> ChatResponse:
+        """Handle specific restock queries - focused on products that need restocking."""
+        try:
+            logger.info("📦 RESTOCK_QUERY: Getting products that need restocking")
+
+            analytics_data = await self.db_service.get_analytics_data()
+            products_with_stock = analytics_data["inventory"]
+
+            if not products_with_stock:
+                return ChatResponse(
+                    response="📦 **Productos que Necesitan Reabastecimiento**\n\n"
+                    "🔍 No hay productos en el inventario para analizar.",
+                    workflow_id="restock-query-empty-"
+                    + datetime.now().strftime("%Y%m%d-%H%M%S"),
+                )
+
+            # Filter products that need restocking (low, critical, or out of stock)
+            low_items = [p for p in products_with_stock if p["stock_status"] == "bajo"]
+            critical_items = [
+                p for p in products_with_stock if p["stock_status"] == "crítico"
+            ]
+            out_of_stock = [
+                p for p in products_with_stock if p["stock_status"] == "agotado"
+            ]
+
+            restock_needed = low_items + critical_items + out_of_stock
+
+            if not restock_needed:
+                return ChatResponse(
+                    response="✅ **Estado de Reabastecimiento**\n\n"
+                    "🎉 ¡Excelente! Todos los productos tienen stock suficiente.\n"
+                    "No hay productos que requieran reabastecimiento en este momento.",
+                    workflow_id="restock-query-ok-"
+                    + datetime.now().strftime("%Y%m%d-%H%M%S"),
+                )
+
+            # Build focused restock response
+            response_text = "🚨 **Productos que Necesitan Reabastecimiento**\n\n"
+
+            if out_of_stock:
+                response_text += "❌ **URGENTE - Sin Stock:**\n"
+                for item in out_of_stock:
+                    response_text += f"• **{item['name']}** - ¡Completamente agotado!\n"
+                response_text += "\n"
+
+            if critical_items:
+                response_text += "🚨 **CRÍTICO - Stock Muy Bajo:**\n"
+                for item in critical_items:
+                    response_text += f"• **{item['name']}** - Solo {item['stock_quantity']} unidades\n"
+                response_text += "\n"
+
+            if low_items:
+                response_text += "⚠️ **ATENCIÓN - Stock Bajo:**\n"
+                for item in low_items:
+                    response_text += f"• **{item['name']}** - {item['stock_quantity']} unidades restantes\n"
+                response_text += "\n"
+
+            # Summary and recommendations
+            total_restock = len(restock_needed)
+            response_text += f"📊 **Resumen:**\n"
+            response_text += (
+                f"- **{total_restock} productos** necesitan reabastecimiento\n"
+            )
+            response_text += f"- **{len(out_of_stock)} productos** sin stock\n"
+            response_text += (
+                f"- **{len(critical_items)} productos** en estado crítico\n"
+            )
+            response_text += f"- **{len(low_items)} productos** con stock bajo\n\n"
+
+            response_text += "💡 **Recomendación:** Prioriza el reabastecimiento de productos sin stock y críticos."
+
+            return ChatResponse(
+                response=response_text,
+                data={
+                    "restock_needed": total_restock,
+                    "out_of_stock": len(out_of_stock),
+                    "critical": len(critical_items),
+                    "low_stock": len(low_items),
+                    "products_needing_restock": [
+                        {
+                            "name": item["name"],
+                            "current_stock": item["stock_quantity"],
+                            "status": item["stock_status"],
+                            "price": item["price"],
+                        }
+                        for item in restock_needed
+                    ],
+                },
+                workflow_id="restock-query-" + datetime.now().strftime("%Y%m%d-%H%M%S"),
+            )
+
+        except Exception as e:
+            logger.error(f"Error in _handle_restock_query: {str(e)}")
+            return ChatResponse(
+                response=f"❌ Error consultando productos para reabastecimiento: {str(e)}",
+                workflow_id="restock-query-error-"
                 + datetime.now().strftime("%Y%m%d-%H%M%S"),
             )
 
